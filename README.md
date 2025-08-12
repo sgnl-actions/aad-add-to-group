@@ -1,185 +1,205 @@
-# SGNL Job Template
+# Azure AD Add User to Group Action
 
-This repository provides a template for creating JavaScript jobs for the SGNL Job Service.
+This action adds a user to a group in Azure Active Directory using the Microsoft Graph API.
 
-## Quick Start
+## Overview
 
-1. **Use this template** to create a new repository
-2. **Clone** your new repository locally
-3. **Install dependencies**: `npm install`  
-4. **Modify** `src/script.mjs` with your job logic
-5. **Update** `metadata.yaml` with your job schema
-6. **Test locally**: `npm run dev`
-7. **Run tests**: `npm test`
-8. **Build**: `npm run build`
-9. **Release**: Create a git tag and push
+The Azure AD Add User to Group action enables automated group membership management by adding users to Azure AD security groups or Microsoft 365 groups. It handles URL encoding, error scenarios, and provides comprehensive retry logic for reliable execution.
+
+## Prerequisites
+
+- Azure AD tenant with appropriate permissions
+- Application registered in Azure AD with the following Microsoft Graph permissions:
+  - `GroupMember.ReadWrite.All` (to add users to groups)
+  - `User.Read.All` (to validate user existence)
+  - `Group.Read.All` (to validate group existence)
+
+## Configuration
+
+### Required Secrets
+
+- **`AZURE_AD_TOKEN`**: Bearer token for Microsoft Graph API authentication
+
+### Required Environment Variables
+
+- **`AZURE_AD_TENANT_URL`**: Azure AD tenant URL (e.g., `https://graph.microsoft.com`)
+
+### Input Parameters
+
+- **`userPrincipalName`** (required): User Principal Name (UPN) of the user to add to the group (e.g., `user@domain.com`)
+- **`groupId`** (required): Azure AD Group ID (GUID format, e.g., `12345678-1234-1234-1234-123456789012`)
+
+### Output Parameters
+
+- **`status`**: Operation result (`success`, `failed`, `recovered`, etc.)
+- **`userPrincipalName`**: User Principal Name that was processed
+- **`groupId`**: Azure AD Group ID that was processed
+- **`added`**: Boolean indicating whether the user was successfully added to the group
+- **`message`**: Optional message providing additional context (e.g., when user is already a member)
+
+## Usage Examples
+
+### Basic Usage
+
+```json
+{
+  "userPrincipalName": "john.doe@company.com",
+  "groupId": "12345678-1234-1234-1234-123456789012"
+}
+```
+
+### In a SGNL Job Specification
+
+```json
+{
+  "id": "add-user-to-hr-group",
+  "type": "nodejs-22",
+  "script": {
+    "repository": "github.com/sgnl-actions/aad-add-to-group",
+    "version": "v1.0.0",
+    "type": "nodejs"
+  },
+  "script_inputs": {
+    "userPrincipalName": "new.employee@company.com",
+    "groupId": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
+  },
+  "environment": {
+    "AZURE_AD_TENANT_URL": "https://graph.microsoft.com"
+  }
+}
+```
+
+## API Details
+
+This action uses the Microsoft Graph API endpoint:
+
+```
+POST https://graph.microsoft.com/v1.0/groups/{groupId}/members/$ref
+```
+
+The request body uses the OData reference format:
+
+```json
+{
+  "@odata.id": "https://graph.microsoft.com/v1.0/users/{encodedUserPrincipalName}"
+}
+```
+
+## Error Handling
+
+### Success Scenarios
+
+- **204 No Content**: User successfully added to group
+- **400 Bad Request** (user already member): Treated as success with `added: false`
+
+### Retryable Errors
+
+The action automatically retries on:
+- **429 Too Many Requests**: Rate limiting
+- **502 Bad Gateway**: Server error
+- **503 Service Unavailable**: Temporary service issues
+- **504 Gateway Timeout**: Request timeout
+
+### Fatal Errors
+
+The following errors will not be retried:
+- **401 Unauthorized**: Invalid or expired authentication token
+- **403 Forbidden**: Insufficient permissions
+- **400 Bad Request** (other than "already member"): Invalid user ID or group ID
+
+### Recovery Logic
+
+The error handler implements exponential backoff with a 5-second initial delay for retryable errors. It attempts one recovery operation before falling back to the framework's retry mechanism.
+
+## Security Considerations
+
+- **Authentication**: Uses Bearer token authentication with Azure AD
+- **URL Encoding**: All user principal names and group IDs are properly URL encoded to prevent injection attacks
+- **Input Validation**: Validates required parameters and environment variables
+- **Token Security**: Authentication tokens are never logged or exposed
 
 ## Development
 
 ### Local Testing
 
 ```bash
-# Run the script locally with mock data
-npm run dev
+# Run with mock parameters
+npm run dev -- --params '{"userPrincipalName": "test@example.com", "groupId": "12345678-1234-1234-1234-123456789012"}'
 
 # Run unit tests
 npm test
 
-# Watch mode for development
-npm run test:watch
-npm run build:watch
+# Check test coverage
+npm run test:coverage
+```
 
-# Validate metadata
-npm run validate
+### Building
+
+```bash
+# Build distribution bundle
+npm run build
 
 # Lint code
 npm run lint
-npm run lint:fix
 ```
 
-### File Structure
+## Troubleshooting
 
-- `src/script.mjs` - Main job implementation (⚠️ **Edit this!**)
-- `metadata.yaml` - Job schema and configuration (⚠️ **Edit this!**)
-- `tests/script.test.js` - Unit tests
-- `dist/index.js` - Built script (generated by `npm run build`)
-- `scripts/` - Development utilities
+### Common Issues
 
-## Implementation Checklist
+1. **"userPrincipalName is required"**
+   - Ensure the `userPrincipalName` parameter is provided
+   - Verify the UPN format matches your Azure AD configuration
 
-### Required Changes
+2. **"groupId is required"**
+   - Ensure the `groupId` parameter is provided
+   - Verify the group ID is a valid GUID format
 
-- [ ] **Update job name** and description in `metadata.yaml`
-- [ ] **Define input parameters** in `metadata.yaml` 
-- [ ] **Define output schema** in `metadata.yaml`
-- [ ] **Implement `invoke` handler** in `src/script.mjs`
-- [ ] **Update test mock data** in `tests/script.test.js`
-- [ ] **Update README** with job-specific documentation
+3. **"AZURE_AD_TOKEN secret is required"**
+   - Ensure the authentication token is configured in secrets
+   - Verify the token has not expired
 
-### Optional Enhancements
+4. **"Authentication failed: 401"**
+   - Check if the Azure AD token is valid and not expired
+   - Verify the application has proper permissions in Azure AD
 
-- [ ] Implement `error` handler for error recovery
-- [ ] Implement `halt` handler for graceful shutdown
-- [ ] Add additional test cases
-- [ ] Customize development runner in `scripts/dev-runner.js`
+5. **"Authentication failed: 403"**
+   - Verify the application has the required Microsoft Graph permissions:
+     - `GroupMember.ReadWrite.All`
+     - `User.Read.All`
+     - `Group.Read.All`
 
-## Event Handlers
+6. **"Bad request: Invalid user ID"**
+   - Verify the user exists in Azure AD
+   - Check that the UPN format is correct
 
-Your script must export a default object with these handlers:
+7. **"Bad request: Invalid group ID"**
+   - Verify the group exists in Azure AD
+   - Check that the group ID is a valid GUID
 
-### `invoke` (Required)
-Main execution logic for your job.
+### Rate Limiting
 
-```javascript
-invoke: async (params, context) => {
-  // Your job logic here
-  return {
-    status: 'success',
-    // ... other outputs
-  };
-}
-```
+Microsoft Graph API has rate limits. The action includes automatic retry logic with exponential backoff for rate limit responses (429). If you encounter persistent rate limiting:
 
-### `error` (Optional)
-Error recovery logic when `invoke` fails.
+1. Consider implementing delays between batch operations
+2. Check if other processes are making concurrent API calls
+3. Review your Azure AD application's API usage patterns
 
-```javascript
-error: async (params, context) => {
-  // params.error contains the original error
-  // Attempt recovery or cleanup
-  return {
-    status: 'recovered',
-    // ... recovery results
-  };
-}
-```
+### Testing Group Membership
 
-### `halt` (Optional)  
-Graceful shutdown when job is cancelled or times out.
+To verify the action worked correctly, you can check group membership using:
 
-```javascript
-halt: async (params, context) => {
-  // params.reason contains halt reason
-  // Clean up resources, save partial progress
-  return {
-    status: 'halted',
-    cleanup_completed: true
-  };
-}
-```
+```bash
+# Using Microsoft Graph API
+curl -H "Authorization: Bearer $TOKEN" \
+  "https://graph.microsoft.com/v1.0/groups/$GROUP_ID/members"
 
-## Context Object
-
-The `context` parameter provides access to:
-
-```javascript
-{
-  env: {
-    ENVIRONMENT: "production",
-    // ... other environment variables
-  },
-  secrets: {
-    API_KEY: "secret-key",
-    // ... other secrets
-  },
-  outputs: {
-    "previous-job-step": {
-      // ... outputs from previous jobs in workflow
-    }
-  }
-}
-```
-
-## Testing
-
-### Unit Tests
-
-Tests are in `tests/script.test.js`. Update the mock data to match your job's inputs:
-
-```javascript
-const params = {
-  target: 'your-target',
-  action: 'your-action'
-  // ... other inputs
-};
-```
-
-### Local Development
-
-Use `npm run dev` to test your script locally with mock data. Update `scripts/dev-runner.js` to customize the test parameters.
-
-## Deployment
-
-1. **Ensure tests pass**: `npm test`
-2. **Validate metadata**: `npm run validate`  
-3. **Build distribution**: `npm run build`
-4. **Create git tag**: `git tag v1.0.0`
-5. **Push to GitHub**: `git push origin v1.0.0`
-
-## Usage in SGNL
-
-Reference your job in a JobSpec:
-
-```json
-{
-  "id": "my-job-123",
-  "type": "nodejs-20",
-  "script": {
-    "repository": "github.com/your-org/your-job-repo",
-    "version": "v1.0.0",
-    "type": "nodejs"
-  },
-  "script_inputs": {
-    "target": "user@example.com",
-    "action": "create"
-  },
-  "environment": {
-    "ENVIRONMENT": "production"
-  }
-}
+# Using Azure CLI
+az ad group member list --group $GROUP_ID --query "[?userPrincipalName=='$USER_UPN']"
 ```
 
 ## Support
 
-- [Job Development Guide](https://github.com/SGNL-ai/job_service/blob/main/docs/JAVASCRIPT_JOB_DEVELOPMENT.md)
-- [SGNL Job Service](https://github.com/SGNL-ai/job_service)
+- [Microsoft Graph API Documentation](https://docs.microsoft.com/en-us/graph/)
+- [Azure AD Group Management](https://docs.microsoft.com/en-us/graph/api/group-post-members)
+- [SGNL Actions Documentation](https://github.com/sgnl-actions)
