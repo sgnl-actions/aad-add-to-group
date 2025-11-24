@@ -47,6 +47,7 @@ export default {
    * @param {string} params.userPrincipalName - User Principal Name (UPN)
    * @param {string} params.groupId - Azure AD Group ID (GUID)
    * @param {Object} context - Execution context with env, secrets, outputs
+   * @param {string} context.secrets.BEARER_AUTH_TOKEN - Bearer token for Azure AD API authentication
    * @returns {Object} Job results
    */
   invoke: async (params, context) => {
@@ -69,8 +70,8 @@ export default {
     }
 
     // Validate required secrets
-    if (!context.secrets?.AZURE_AD_TOKEN) {
-      throw new Error('AZURE_AD_TOKEN secret is required');
+    if (!context.secrets?.BEARER_AUTH_TOKEN) {
+      throw new Error('BEARER_AUTH_TOKEN secret is required');
     }
 
     console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
@@ -80,7 +81,7 @@ export default {
         userPrincipalName,
         groupId,
         context.environment.AZURE_AD_TENANT_URL,
-        context.secrets.AZURE_AD_TOKEN
+        context.secrets.BEARER_AUTH_TOKEN
       );
 
       // Handle different response scenarios
@@ -143,7 +144,7 @@ export default {
           params.userPrincipalName,
           params.groupId,
           context.environment.AZURE_AD_TENANT_URL,
-          context.secrets.AZURE_AD_TOKEN
+          context.secrets.BEARER_AUTH_TOKEN
         );
 
         if (response.status === 204) {

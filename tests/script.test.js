@@ -11,7 +11,7 @@ describe('Azure AD Add User to Group Script', () => {
       AZURE_AD_TENANT_URL: 'https://graph.microsoft.com'
     },
     secrets: {
-      AZURE_AD_TOKEN: 'test-token-123456'
+      BEARER_AUTH_TOKEN: 'test-token-123456'
     }
   };
 
@@ -152,7 +152,7 @@ describe('Azure AD Add User to Group Script', () => {
       await expect(script.invoke(params, contextMissingTenantUrl)).rejects.toThrow('AZURE_AD_TENANT_URL environment variable is required');
     });
 
-    test('should throw error for missing AZURE_AD_TOKEN', async () => {
+    test('should throw error for missing BEARER_AUTH_TOKEN', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012'
@@ -163,7 +163,7 @@ describe('Azure AD Add User to Group Script', () => {
         secrets: {}
       };
 
-      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('AZURE_AD_TOKEN secret is required');
+      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('BEARER_AUTH_TOKEN secret is required');
     });
 
     test('should handle API error responses', async () => {

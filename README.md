@@ -18,7 +18,7 @@ The Azure AD Add User to Group action enables automated group membership managem
 
 ### Required Secrets
 
-- **`AZURE_AD_TOKEN`**: Bearer token for Microsoft Graph API authentication
+- **`BEARER_AUTH_TOKEN`**: Bearer token for Azure AD API authentication
 
 ### Required Environment Variables
 
@@ -155,7 +155,7 @@ npm run lint
    - Ensure the `groupId` parameter is provided
    - Verify the group ID is a valid GUID format
 
-3. **"AZURE_AD_TOKEN secret is required"**
+3. **"BEARER_AUTH_TOKEN secret is required"**
    - Ensure the authentication token is configured in secrets
    - Verify the token has not expired
 
