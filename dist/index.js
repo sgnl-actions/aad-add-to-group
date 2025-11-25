@@ -12,10 +12,10 @@
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
  * @param {string} baseUrl - Azure AD base URL
- * @param {string} authToken - Azure AD authentication token
+ * @param {string} bearerAuthToken - Bearer authentication token
  * @returns {Promise<Response>} - Fetch response object
  */
-async function addUserToGroup(userPrincipalName, groupId, baseUrl, authToken) {
+async function addUserToGroup(userPrincipalName, groupId, baseUrl, bearerAuthToken) {
   // Remove trailing slash from baseUrl if present
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 
@@ -36,7 +36,7 @@ async function addUserToGroup(userPrincipalName, groupId, baseUrl, authToken) {
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${authToken}`,
+      'Authorization': `Bearer ${bearerAuthToken}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
