@@ -8,13 +8,13 @@
  * Helper function to add a user to a group in Azure AD
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
- * @param {string} baseUrl - Azure AD base URL
- * @param {string} bearerAuthToken - Bearer authentication token
+ * @param {string} address - Azure AD base URL
+ * @param {string} authToken - Bearer authentication token
  * @returns {Promise<Response>} - Fetch response object
  */
-async function addUserToGroup(userPrincipalName, groupId, baseUrl, bearerAuthToken) {
-  // Remove trailing slash from baseUrl if present
-  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+async function addUserToGroup(userPrincipalName, groupId, address, authToken) {
+  // Remove trailing slash from address if present
+  const cleanAddress = address.endsWith('/') ? address.slice(0, -1) : address;
 
   // URL encode the user principal name for the OData reference
   const encodedUPN = encodeURIComponent(userPrincipalName);
@@ -23,7 +23,7 @@ async function addUserToGroup(userPrincipalName, groupId, baseUrl, bearerAuthTok
   const encodedGroupId = encodeURIComponent(groupId);
 
   // Construct the Graph API endpoint
-  const url = `${cleanBaseUrl}/v1.0/groups/${encodedGroupId}/members/$ref`;
+  const url = `${cleanAddress}/v1.0/groups/${encodedGroupId}/members/$ref`;
 
   // Prepare the request body with OData reference to the user
   const requestBody = {
@@ -33,7 +33,7 @@ async function addUserToGroup(userPrincipalName, groupId, baseUrl, bearerAuthTok
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${bearerAuthToken}`,
+      'Authorization': `Bearer ${authToken}`,
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     },
@@ -70,8 +70,8 @@ export default {
     }
 
     // Determine the URL to use
-    const baseUrl = params.address || context.environment?.ADDRESS;
-    if (!baseUrl) {
+    const address = params.address || context.environment?.ADDRESS;
+    if (!address) {
       throw new Error('No URL specified. Provide either address parameter or ADDRESS environment variable');
     }
 
@@ -86,7 +86,7 @@ export default {
       const response = await addUserToGroup(
         userPrincipalName,
         groupId,
-        baseUrl,
+        address,
         context.secrets.BEARER_AUTH_TOKEN
       );
 
@@ -146,11 +146,11 @@ export default {
 
       // Attempt recovery by retrying the operation
       try {
-        const baseUrl = params.address || context.environment?.ADDRESS;
+        const address = params.address || context.environment?.ADDRESS;
         const response = await addUserToGroup(
           params.userPrincipalName,
           params.groupId,
-          baseUrl,
+          address,
           context.secrets.BEARER_AUTH_TOKEN
         );
 
