@@ -8,11 +8,14 @@
  * Helper function to add a user to a group in Azure AD
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
- * @param {string} tenantUrl - Azure AD tenant URL
+ * @param {string} baseUrl - Azure AD base URL
  * @param {string} authToken - Azure AD authentication token
  * @returns {Promise<Response>} - Fetch response object
  */
-async function addUserToGroup(userPrincipalName, groupId, tenantUrl, authToken) {
+async function addUserToGroup(userPrincipalName, groupId, baseUrl, authToken) {
+  // Remove trailing slash from baseUrl if present
+  const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
   // URL encode the user principal name for the OData reference
   const encodedUPN = encodeURIComponent(userPrincipalName);
 
@@ -20,14 +23,14 @@ async function addUserToGroup(userPrincipalName, groupId, tenantUrl, authToken) 
   const encodedGroupId = encodeURIComponent(groupId);
 
   // Construct the Graph API endpoint
-  const url = new URL(`/v1.0/groups/${encodedGroupId}/members/$ref`, tenantUrl);
+  const url = `${cleanBaseUrl}/v1.0/groups/${encodedGroupId}/members/$ref`;
 
   // Prepare the request body with OData reference to the user
   const requestBody = {
     '@odata.id': `https://graph.microsoft.com/v1.0/users/${encodedUPN}`
   };
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${authToken}`,
@@ -46,7 +49,9 @@ export default {
    * @param {Object} params - Job input parameters
    * @param {string} params.userPrincipalName - User Principal Name (UPN)
    * @param {string} params.groupId - Azure AD Group ID (GUID)
+   * @param {string} params.address - The Azure AD API base URL (e.g., https://graph.microsoft.com)
    * @param {Object} context - Execution context with env, secrets, outputs
+   * @param {string} context.environment.ADDRESS - Default Azure AD API base URL
    * @param {string} context.secrets.BEARER_AUTH_TOKEN - Bearer token for Azure AD API authentication
    * @returns {Object} Job results
    */
@@ -64,9 +69,10 @@ export default {
       throw new Error('groupId is required');
     }
 
-    // Validate required environment variables
-    if (!context.environment?.AZURE_AD_TENANT_URL) {
-      throw new Error('AZURE_AD_TENANT_URL environment variable is required');
+    // Determine the URL to use
+    const baseUrl = params.address || context.environment?.ADDRESS;
+    if (!baseUrl) {
+      throw new Error('No URL specified. Provide either address parameter or ADDRESS environment variable');
     }
 
     // Validate required secrets
@@ -80,7 +86,7 @@ export default {
       const response = await addUserToGroup(
         userPrincipalName,
         groupId,
-        context.environment.AZURE_AD_TENANT_URL,
+        baseUrl,
         context.secrets.BEARER_AUTH_TOKEN
       );
 
@@ -140,10 +146,11 @@ export default {
 
       // Attempt recovery by retrying the operation
       try {
+        const baseUrl = params.address || context.environment?.ADDRESS;
         const response = await addUserToGroup(
           params.userPrincipalName,
           params.groupId,
-          context.environment.AZURE_AD_TENANT_URL,
+          baseUrl,
           context.secrets.BEARER_AUTH_TOKEN
         );
 
