@@ -8,10 +8,10 @@ global.URL = URL;
 describe('Azure AD Add User to Group Script', () => {
   const mockContext = {
     environment: {
-      AZURE_AD_TENANT_URL: 'https://graph.microsoft.com'
+      ADDRESS: 'https://graph.microsoft.com'
     },
     secrets: {
-      BEARER_AUTH_TOKEN: 'test-token-123456'
+      OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN: 'test-token-123456'
     }
   };
 
@@ -138,21 +138,21 @@ describe('Azure AD Add User to Group Script', () => {
       await expect(script.invoke(params, mockContext)).rejects.toThrow('groupId is required');
     });
 
-    test('should throw error for missing AZURE_AD_TENANT_URL', async () => {
+    test('should throw error for missing ADDRESS', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012'
       };
 
-      const contextMissingTenantUrl = {
+      const contextMissingAddress = {
         ...mockContext,
         environment: {}
       };
 
-      await expect(script.invoke(params, contextMissingTenantUrl)).rejects.toThrow('AZURE_AD_TENANT_URL environment variable is required');
+      await expect(script.invoke(params, contextMissingAddress)).rejects.toThrow('ADDRESS environment variable is required');
     });
 
-    test('should throw error for missing BEARER_AUTH_TOKEN', async () => {
+    test('should throw error for missing OAuth2 authentication', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012'
@@ -163,7 +163,7 @@ describe('Azure AD Add User to Group Script', () => {
         secrets: {}
       };
 
-      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('BEARER_AUTH_TOKEN secret is required');
+      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('OAuth2 authentication is required');
     });
 
     test('should handle API error responses', async () => {
@@ -210,7 +210,7 @@ describe('Azure AD Add User to Group Script', () => {
   });
 
   describe('error handler', () => {
-    test('should handle retryable error (429 rate limit)', async () => {
+    test('should handle retryable error (429 rate limit) with OAuth2', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012',
