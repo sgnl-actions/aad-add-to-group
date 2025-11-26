@@ -16,18 +16,48 @@ The Azure AD Add User to Group action enables automated group membership managem
 
 ## Configuration
 
-### Required Secrets
+### Authentication
 
-- **`BEARER_AUTH_TOKEN`**: Bearer token for Azure AD API authentication
+This action supports two OAuth2 authentication methods:
+
+#### OAuth2 Authorization Code Flow
+
+**Required Secrets:**
+- **`OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN`**: OAuth2 access token
+
+**Required Environment Variables:**
+- **`OAUTH2_AUTHORIZATION_CODE_CLIENT_ID`**: OAuth2 client ID
+- **`OAUTH2_AUTHORIZATION_CODE_TOKEN_URL`**: Token endpoint URL
+
+**Optional Environment Variables:**
+- **`OAUTH2_AUTHORIZATION_CODE_AUTH_STYLE`**: Authentication style (`InHeader`, `InParams`, or `AutoDetect`)
+- **`OAUTH2_AUTHORIZATION_CODE_AUTH_URL`**: Authorization endpoint URL
+- **`OAUTH2_AUTHORIZATION_CODE_SCOPE`**: OAuth2 scope
+- **`OAUTH2_AUTHORIZATION_CODE_REDIRECT_URI`**: OAuth2 redirect URI
+
+#### OAuth2 Client Credentials Flow
+
+**Required Secrets:**
+- **`OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET`**: OAuth2 client secret
+
+**Required Environment Variables:**
+- **`OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL`**: Token endpoint URL
+- **`OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID`**: OAuth2 client ID
+
+**Optional Environment Variables:**
+- **`OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE`**: Authentication style (`InHeader`, `InParams`, or `AutoDetect`)
+- **`OAUTH2_CLIENT_CREDENTIALS_SCOPE`**: OAuth2 scope
+- **`OAUTH2_CLIENT_CREDENTIALS_AUDIENCE`**: OAuth2 audience
 
 ### Required Environment Variables
 
-- **`AZURE_AD_TENANT_URL`**: Azure AD tenant URL (e.g., `https://graph.microsoft.com`)
+- **`ADDRESS`**: Azure AD API base URL (e.g., `https://graph.microsoft.com`)
 
 ### Input Parameters
 
 - **`userPrincipalName`** (required): User Principal Name (UPN) of the user to add to the group (e.g., `user@domain.com`)
 - **`groupId`** (required): Azure AD Group ID (GUID format, e.g., `12345678-1234-1234-1234-123456789012`)
+- **`address`** (optional): The Azure AD API base URL (overrides `ADDRESS` environment variable)
 
 ### Output Parameters
 
@@ -48,7 +78,7 @@ The Azure AD Add User to Group action enables automated group membership managem
 }
 ```
 
-### In a SGNL Job Specification
+### With OAuth2 Client Credentials
 
 ```json
 {
@@ -64,7 +94,31 @@ The Azure AD Add User to Group action enables automated group membership managem
     "groupId": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
   },
   "environment": {
-    "AZURE_AD_TENANT_URL": "https://graph.microsoft.com"
+    "ADDRESS": "https://graph.microsoft.com",
+    "OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token",
+    "OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID": "your-client-id",
+    "OAUTH2_CLIENT_CREDENTIALS_SCOPE": "https://graph.microsoft.com/.default"
+  }
+}
+```
+
+### With OAuth2 Authorization Code
+
+```json
+{
+  "id": "add-user-to-hr-group",
+  "type": "nodejs-22",
+  "script": {
+    "repository": "github.com/sgnl-actions/aad-add-to-group",
+    "version": "v1.0.0",
+    "type": "nodejs"
+  },
+  "script_inputs": {
+    "userPrincipalName": "new.employee@company.com",
+    "groupId": "a1b2c3d4-e5f6-7890-1234-56789abcdef0"
+  },
+  "environment": {
+    "ADDRESS": "https://graph.microsoft.com"
   }
 }
 ```
@@ -113,10 +167,11 @@ The error handler implements exponential backoff with a 5-second initial delay f
 
 ## Security Considerations
 
-- **Authentication**: Uses Bearer token authentication with Azure AD
+- **Authentication**: Uses OAuth2 authentication (Authorization Code or Client Credentials flow)
+- **Token Management**: Access tokens are automatically fetched for Client Credentials flow
 - **URL Encoding**: All user principal names and group IDs are properly URL encoded to prevent injection attacks
 - **Input Validation**: Validates required parameters and environment variables
-- **Token Security**: Authentication tokens are never logged or exposed
+- **Token Security**: Authentication tokens and secrets are never logged or exposed
 
 ## Development
 
@@ -155,25 +210,35 @@ npm run lint
    - Ensure the `groupId` parameter is provided
    - Verify the group ID is a valid GUID format
 
-3. **"BEARER_AUTH_TOKEN secret is required"**
-   - Ensure the authentication token is configured in secrets
-   - Verify the token has not expired
+3. **"OAuth2 authentication is required"**
+   - Ensure either OAuth2 Authorization Code or Client Credentials flow is configured
+   - Verify all required secrets and environment variables are set
 
-4. **"Authentication failed: 401"**
-   - Check if the Azure AD token is valid and not expired
+4. **"OAuth2 Client Credentials flow requires TOKEN_URL, CLIENT_ID, and CLIENT_SECRET"**
+   - Check that `OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL` is set
+   - Check that `OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID` is set
+   - Check that `OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET` is set in secrets
+
+5. **"OAuth2 token request failed"**
+   - Verify the token URL is correct
+   - Check that client credentials are valid
+   - Ensure the scope is appropriate for Microsoft Graph API
+
+6. **"Authentication failed: 401"**
+   - Check if the OAuth2 access token is valid and not expired
    - Verify the application has proper permissions in Azure AD
 
-5. **"Authentication failed: 403"**
+7. **"Authentication failed: 403"**
    - Verify the application has the required Microsoft Graph permissions:
      - `GroupMember.ReadWrite.All`
      - `User.Read.All`
      - `Group.Read.All`
 
-6. **"Bad request: Invalid user ID"**
+8. **"Bad request: Invalid user ID"**
    - Verify the user exists in Azure AD
    - Check that the UPN format is correct
 
-7. **"Bad request: Invalid group ID"**
+9. **"Bad request: Invalid group ID"**
    - Verify the group exists in Azure AD
    - Check that the group ID is a valid GUID
 
