@@ -149,7 +149,7 @@ describe('Azure AD Add User to Group Script', () => {
         environment: {}
       };
 
-      await expect(script.invoke(params, contextMissingAddress)).rejects.toThrow('ADDRESS environment variable is required');
+      await expect(script.invoke(params, contextMissingAddress)).rejects.toThrow('No URL specified. Provide either address parameter or ADDRESS environment variable');
     });
 
     test('should throw error for missing OAuth2 authentication', async () => {
