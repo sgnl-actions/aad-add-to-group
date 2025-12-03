@@ -25,16 +25,6 @@ This action supports two OAuth2 authentication methods:
 **Required Secrets:**
 - **`OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN`**: OAuth2 access token
 
-**Required Environment Variables:**
-- **`OAUTH2_AUTHORIZATION_CODE_CLIENT_ID`**: OAuth2 client ID
-- **`OAUTH2_AUTHORIZATION_CODE_TOKEN_URL`**: Token endpoint URL
-
-**Optional Environment Variables:**
-- **`OAUTH2_AUTHORIZATION_CODE_AUTH_STYLE`**: Authentication style (`InHeader`, `InParams`, or `AutoDetect`)
-- **`OAUTH2_AUTHORIZATION_CODE_AUTH_URL`**: Authorization endpoint URL
-- **`OAUTH2_AUTHORIZATION_CODE_SCOPE`**: OAuth2 scope
-- **`OAUTH2_AUTHORIZATION_CODE_REDIRECT_URI`**: OAuth2 redirect URI
-
 #### OAuth2 Client Credentials Flow
 
 **Required Secrets:**
@@ -98,6 +88,9 @@ This action supports two OAuth2 authentication methods:
     "OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL": "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token",
     "OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID": "your-client-id",
     "OAUTH2_CLIENT_CREDENTIALS_SCOPE": "https://graph.microsoft.com/.default"
+  },
+  "secrets": {
+    "OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET": "your-client-secret"
   }
 }
 ```
@@ -119,6 +112,9 @@ This action supports two OAuth2 authentication methods:
   },
   "environment": {
     "ADDRESS": "https://graph.microsoft.com"
+  },
+  "secrets": {
+    "OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN": "your-access-token"
   }
 }
 ```
