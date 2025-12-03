@@ -296,58 +296,19 @@ var script = {
   },
 
   /**
-   * Error recovery handler - handles retry logic for transient failures
+   * Error recovery handler - framework handles retries by default
+   * Only implement if custom recovery logic is needed
    * @param {Object} params - Original params plus error information
    * @param {Object} context - Execution context
    * @returns {Object} Recovery results
    */
-  error: async (params, context) => {
-    const { error } = params;
-    console.error(`Azure AD add user to group encountered error: ${error.message}`);
+  error: async (params, _context) => {
+    const { error, userPrincipalName, groupId } = params;
+    console.error(`User group assignment failed for user ${userPrincipalName} to group ${groupId}: ${error.message}`);
 
-    // Check for retryable errors (rate limiting, server errors)
-    if (error.message.includes('429') ||
-        error.message.includes('502') ||
-        error.message.includes('503') ||
-        error.message.includes('504')) {
-
-      console.log('Retryable error detected, waiting before retry...');
-      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
-
-      // Attempt recovery by retrying the operation
-      try {
-        const baseUrl = getBaseUrl(params, context);
-        const headers = await createAuthHeaders(context);
-
-        const response = await addUserToGroup(
-          params.userPrincipalName,
-          params.groupId,
-          baseUrl,
-          headers
-        );
-
-        if (response.status === 204) {
-          console.log(`Recovery successful: user ${params.userPrincipalName} added to group ${params.groupId}`);
-          return {
-            status: 'recovered',
-            userPrincipalName: params.userPrincipalName,
-            groupId: params.groupId,
-            added: true
-          };
-        }
-      } catch (recoveryError) {
-        console.error(`Recovery attempt failed: ${recoveryError.message}`);
-      }
-    }
-
-    // For authentication errors (401, 403) or other permanent failures, don't retry
-    if (error.message.includes('401') || error.message.includes('403')) {
-      console.error('Authentication error - operation cannot be retried');
-      throw error;
-    }
-
-    // Default: let framework handle retry
-    return { status: 'retry_requested' };
+    // Framework handles retries for transient errors (429, 502, 503, 504)
+    // Just re-throw the error to let the framework handle it
+    throw error;
   },
 
   /**
