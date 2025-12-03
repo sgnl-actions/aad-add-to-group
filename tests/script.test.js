@@ -8,10 +8,10 @@ global.URL = URL;
 describe('Azure AD Add User to Group Script', () => {
   const mockContext = {
     environment: {
-      AZURE_AD_TENANT_URL: 'https://graph.microsoft.com'
+      ADDRESS: 'https://graph.microsoft.com'
     },
     secrets: {
-      AZURE_AD_TOKEN: 'test-token-123456'
+      OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN: 'test-token-123456'
     }
   };
 
@@ -138,21 +138,21 @@ describe('Azure AD Add User to Group Script', () => {
       await expect(script.invoke(params, mockContext)).rejects.toThrow('groupId is required');
     });
 
-    test('should throw error for missing AZURE_AD_TENANT_URL', async () => {
+    test('should throw error for missing ADDRESS', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012'
       };
 
-      const contextMissingTenantUrl = {
+      const contextMissingAddress = {
         ...mockContext,
         environment: {}
       };
 
-      await expect(script.invoke(params, contextMissingTenantUrl)).rejects.toThrow('AZURE_AD_TENANT_URL environment variable is required');
+      await expect(script.invoke(params, contextMissingAddress)).rejects.toThrow('No URL specified. Provide address parameter or ADDRESS environment variable');
     });
 
-    test('should throw error for missing AZURE_AD_TOKEN', async () => {
+    test('should throw error for missing OAuth2 authentication', async () => {
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012'
@@ -163,7 +163,7 @@ describe('Azure AD Add User to Group Script', () => {
         secrets: {}
       };
 
-      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('AZURE_AD_TOKEN secret is required');
+      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('No authentication configured');
     });
 
     test('should handle API error responses', async () => {
@@ -210,50 +210,32 @@ describe('Azure AD Add User to Group Script', () => {
   });
 
   describe('error handler', () => {
-    test('should handle retryable error (429 rate limit)', async () => {
+    test('should re-throw error and let framework handle retries', async () => {
+      const errorObj = new Error('Rate limited: 429');
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012',
-        error: { message: 'Rate limited: 429' }
+        error: errorObj
       };
 
-      // Mock setTimeout to avoid actual delay in tests
-      jest.useFakeTimers();
-
-      // First call for recovery attempt
-      global.fetch.mockResolvedValueOnce({
-        status: 204,
-        ok: true
-      });
-
-      const recoveryPromise = script.error(params, mockContext);
-
-      // Fast-forward the timer
-      jest.advanceTimersByTime(5000);
-
-      const result = await recoveryPromise;
-
-      expect(result.status).toBe('recovered');
-      expect(result.userPrincipalName).toBe('test-user@example.com');
-      expect(result.groupId).toBe('12345678-1234-1234-1234-123456789012');
-      expect(result.added).toBe(true);
-
-      jest.useRealTimers();
+      await expect(script.error(params, mockContext)).rejects.toThrow(errorObj);
+      expect(console.error).toHaveBeenCalledWith(
+        'User group assignment failed for user test-user@example.com to group 12345678-1234-1234-1234-123456789012: Rate limited: 429'
+      );
     });
 
-    test('should handle retryable server errors (502, 503, 504)', async () => {
+    test('should re-throw server errors', async () => {
+      const errorObj = new Error('Server error: 502');
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012',
-        error: { message: 'Server error: 502' }
+        error: errorObj
       };
 
-      const result = await script.error(params, mockContext);
+      await expect(script.error(params, mockContext)).rejects.toThrow(errorObj);
+    });
 
-      expect(result.status).toBe('retry_requested');
-    }, 10000); // Increase timeout for this test
-
-    test('should not retry authentication errors (401, 403)', async () => {
+    test('should re-throw authentication errors', async () => {
       const errorObj = new Error('Authentication failed: 401');
       const params = {
         userPrincipalName: 'test-user@example.com',
@@ -264,39 +246,15 @@ describe('Azure AD Add User to Group Script', () => {
       await expect(script.error(params, mockContext)).rejects.toThrow(errorObj);
     });
 
-    test('should request retry for other errors', async () => {
+    test('should re-throw any error', async () => {
+      const errorObj = new Error('Unknown error occurred');
       const params = {
         userPrincipalName: 'test-user@example.com',
         groupId: '12345678-1234-1234-1234-123456789012',
-        error: { message: 'Unknown error occurred' }
+        error: errorObj
       };
 
-      const result = await script.error(params, mockContext);
-
-      expect(result.status).toBe('retry_requested');
-    });
-
-    test('should handle recovery failure gracefully', async () => {
-      const params = {
-        userPrincipalName: 'test-user@example.com',
-        groupId: '12345678-1234-1234-1234-123456789012',
-        error: { message: 'Rate limited: 429' }
-      };
-
-      jest.useFakeTimers();
-
-      // Mock recovery attempt failure
-      global.fetch.mockRejectedValueOnce(new Error('Recovery failed'));
-
-      const recoveryPromise = script.error(params, mockContext);
-
-      jest.advanceTimersByTime(5000);
-
-      const result = await recoveryPromise;
-
-      expect(result.status).toBe('retry_requested');
-
-      jest.useRealTimers();
+      await expect(script.error(params, mockContext)).rejects.toThrow(errorObj);
     });
   });
 

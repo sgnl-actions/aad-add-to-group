@@ -4,15 +4,17 @@
  * Adds a user to a group in Azure Active Directory using Microsoft Graph API.
  */
 
+import { getBaseUrl, createAuthHeaders } from '@sgnl-actions/utils';
+
 /**
  * Helper function to add a user to a group in Azure AD
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
- * @param {string} tenantUrl - Azure AD tenant URL
- * @param {string} authToken - Azure AD authentication token
+ * @param {string} baseUrl - Azure AD base URL
+ * @param {Object} headers - Request headers with Authorization
  * @returns {Promise<Response>} - Fetch response object
  */
-async function addUserToGroup(userPrincipalName, groupId, tenantUrl, authToken) {
+async function addUserToGroup(userPrincipalName, groupId, baseUrl, headers) {
   // URL encode the user principal name for the OData reference
   const encodedUPN = encodeURIComponent(userPrincipalName);
 
@@ -20,20 +22,16 @@ async function addUserToGroup(userPrincipalName, groupId, tenantUrl, authToken) 
   const encodedGroupId = encodeURIComponent(groupId);
 
   // Construct the Graph API endpoint
-  const url = new URL(`/v1.0/groups/${encodedGroupId}/members/$ref`, tenantUrl);
+  const url = `${baseUrl}/v1.0/groups/${encodedGroupId}/members/$ref`;
 
   // Prepare the request body with OData reference to the user
   const requestBody = {
     '@odata.id': `https://graph.microsoft.com/v1.0/users/${encodedUPN}`
   };
 
-  const response = await fetch(url.toString(), {
+  const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${authToken}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
+    headers,
     body: JSON.stringify(requestBody)
   });
 
@@ -46,7 +44,20 @@ export default {
    * @param {Object} params - Job input parameters
    * @param {string} params.userPrincipalName - User Principal Name (UPN)
    * @param {string} params.groupId - Azure AD Group ID (GUID)
+   * @param {string} params.address - The Azure AD API base URL (e.g., https://graph.microsoft.com)
    * @param {Object} context - Execution context with env, secrets, outputs
+   * @param {string} context.environment.ADDRESS - Default Azure AD API base URL
+   *
+   * The configured auth type will determine which of the following environment variables and secrets are available
+   * @param {string} context.secrets.OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUDIENCE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_SCOPE
+   * @param {string} context.environment.OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL
+   *
+   * @param {string} context.secrets.OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN
+   *
    * @returns {Object} Job results
    */
   invoke: async (params, context) => {
@@ -63,15 +74,9 @@ export default {
       throw new Error('groupId is required');
     }
 
-    // Validate required environment variables
-    if (!context.environment?.AZURE_AD_TENANT_URL) {
-      throw new Error('AZURE_AD_TENANT_URL environment variable is required');
-    }
-
-    // Validate required secrets
-    if (!context.secrets?.AZURE_AD_TOKEN) {
-      throw new Error('AZURE_AD_TOKEN secret is required');
-    }
+    // Get base URL and authentication headers using utilities
+    const baseUrl = getBaseUrl(params, context);
+    const headers = await createAuthHeaders(context);
 
     console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
 
@@ -79,8 +84,8 @@ export default {
       const response = await addUserToGroup(
         userPrincipalName,
         groupId,
-        context.environment.AZURE_AD_TENANT_URL,
-        context.secrets.AZURE_AD_TOKEN
+        baseUrl,
+        headers
       );
 
       // Handle different response scenarios
@@ -119,55 +124,19 @@ export default {
   },
 
   /**
-   * Error recovery handler - handles retry logic for transient failures
+   * Error recovery handler - framework handles retries by default
+   * Only implement if custom recovery logic is needed
    * @param {Object} params - Original params plus error information
    * @param {Object} context - Execution context
    * @returns {Object} Recovery results
    */
-  error: async (params, context) => {
-    const { error } = params;
-    console.error(`Azure AD add user to group encountered error: ${error.message}`);
+  error: async (params, _context) => {
+    const { error, userPrincipalName, groupId } = params;
+    console.error(`User group assignment failed for user ${userPrincipalName} to group ${groupId}: ${error.message}`);
 
-    // Check for retryable errors (rate limiting, server errors)
-    if (error.message.includes('429') ||
-        error.message.includes('502') ||
-        error.message.includes('503') ||
-        error.message.includes('504')) {
-
-      console.log('Retryable error detected, waiting before retry...');
-      await new Promise(resolve => setTimeout(resolve, 5000)); // 5 second delay
-
-      // Attempt recovery by retrying the operation
-      try {
-        const response = await addUserToGroup(
-          params.userPrincipalName,
-          params.groupId,
-          context.environment.AZURE_AD_TENANT_URL,
-          context.secrets.AZURE_AD_TOKEN
-        );
-
-        if (response.status === 204) {
-          console.log(`Recovery successful: user ${params.userPrincipalName} added to group ${params.groupId}`);
-          return {
-            status: 'recovered',
-            userPrincipalName: params.userPrincipalName,
-            groupId: params.groupId,
-            added: true
-          };
-        }
-      } catch (recoveryError) {
-        console.error(`Recovery attempt failed: ${recoveryError.message}`);
-      }
-    }
-
-    // For authentication errors (401, 403) or other permanent failures, don't retry
-    if (error.message.includes('401') || error.message.includes('403')) {
-      console.error('Authentication error - operation cannot be retried');
-      throw error;
-    }
-
-    // Default: let framework handle retry
-    return { status: 'retry_requested' };
+    // Framework handles retries for transient errors (429, 502, 503, 504)
+    // Just re-throw the error to let the framework handle it
+    throw error;
   },
 
   /**
