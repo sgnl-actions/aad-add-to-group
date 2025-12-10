@@ -145,7 +145,7 @@ async function getAuthorizationHeader(context) {
  * @param {Object} context - Execution context
  * @returns {string} Base URL
  */
-function getBaseUrl(params, context) {
+function getBaseURL(params, context) {
   const env = context.environment || {};
   const address = params?.address || env.ADDRESS;
 
@@ -235,8 +235,16 @@ var script = {
   invoke: async (params, context) => {
     console.log('Starting Azure AD add user to group operation');
 
+    const jobContext = context.data || {};
+
+    // Resolve JSONPath templates in params
+    const { result: resolvedParams, errors } = resolveJSONPathTemplates(params, jobContext);
+    if (errors.length > 0) {
+      console.warn('Template resolution errors:', errors);
+    }
+
     // Validate required inputs
-    const { userPrincipalName, groupId } = params;
+    const { userPrincipalName, groupId } = resolvedParams;
 
     if (!userPrincipalName) {
       throw new Error('userPrincipalName is required');
@@ -247,7 +255,7 @@ var script = {
     }
 
     // Get base URL and authentication headers using utilities
-    const baseUrl = getBaseUrl(params, context);
+    const baseUrl = getBaseURL(resolvedParams, context);
     const headers = await createAuthHeaders(context);
 
     console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
