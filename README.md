@@ -20,42 +20,45 @@ The Azure AD Add User to Group action enables automated group membership managem
 
 This action supports two OAuth2 authentication methods:
 
-#### OAuth2 Authorization Code Flow
+#### Option 1: OAuth2 Client Credentials
+| Secret/Environment | Description |
+|-------------------|-------------|
+| `OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET` | OAuth2 client secret |
+| `OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID` | OAuth2 client ID |
+| `OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL` | OAuth2 token endpoint URL |
+| `OAUTH2_CLIENT_CREDENTIALS_SCOPE` | OAuth2 scope (optional) |
+| `OAUTH2_CLIENT_CREDENTIALS_AUDIENCE` | OAuth2 audience (optional) |
+| `OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE` | OAuth2 auth style (optional) |
 
-**Required Secrets:**
-- **`OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN`**: OAuth2 access token
-
-#### OAuth2 Client Credentials Flow
-
-**Required Secrets:**
-- **`OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET`**: OAuth2 client secret
-
-**Required Environment Variables:**
-- **`OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL`**: Token endpoint URL
-- **`OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID`**: OAuth2 client ID
-
-**Optional Environment Variables:**
-- **`OAUTH2_CLIENT_CREDENTIALS_AUTH_STYLE`**: Authentication style (`InHeader`, `InParams`, or `AutoDetect`)
-- **`OAUTH2_CLIENT_CREDENTIALS_SCOPE`**: OAuth2 scope
-- **`OAUTH2_CLIENT_CREDENTIALS_AUDIENCE`**: OAuth2 audience
+#### Option 2: OAuth2 Authorization Code
+| Secret | Description |
+|--------|-------------|
+| `OAUTH2_AUTHORIZATION_CODE_ACCESS_TOKEN` | OAuth2 access token |
 
 ### Required Environment Variables
 
-- **`ADDRESS`**: Azure AD API base URL (e.g., `https://graph.microsoft.com`)
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ADDRESS` | Default Azure AD API base URL | `https://graph.microsoft.com` |
 
 ### Input Parameters
 
-- **`userPrincipalName`** (required): User Principal Name (UPN) of the user to add to the group (e.g., `user@domain.com`)
-- **`groupId`** (required): Azure AD Group ID (GUID format, e.g., `12345678-1234-1234-1234-123456789012`)
-- **`address`** (optional): The Azure AD API base URL (overrides `ADDRESS` environment variable)
+| Parameter | Type | Required | Description | Example |
+|-----------|------|----------|-------------|---------|
+| `userPrincipalName` | string | Yes | User Principal Name (UPN) of the user to add | `user@domain.com` |
+| `groupId` | string | Yes | Azure AD Group ID (GUID) | `12345678-1234-1234-1234-123456789012` |
+| `address` | string | No | Optional Azure AD API base URL override | `https://graph.microsoft.com` |
 
-### Output Parameters
+### Output Structure
 
-- **`status`**: Operation result (`success`, `failed`, `recovered`, etc.)
-- **`userPrincipalName`**: User Principal Name that was processed
-- **`groupId`**: Azure AD Group ID that was processed
-- **`added`**: Boolean indicating whether the user was successfully added to the group
-- **`message`**: Optional message providing additional context (e.g., when user is already a member)
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | Operation result (success, failed, etc.) |
+| `userPrincipalName` | string | User Principal Name that was processed |
+| `groupId` | string | Azure AD Group ID that was processed |
+| `added` | boolean | Whether the user was successfully added to the group |
+| `address` | string | The Azure AD API base URL used |
+| `message` | string | Optional message providing additional context (e.g., when user is already a member)
 
 ## Usage Examples
 
