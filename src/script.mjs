@@ -71,16 +71,7 @@ export default {
       console.warn('Template resolution errors:', errors);
     }
 
-    // Validate required inputs
     const { userPrincipalName, groupId } = resolvedParams;
-
-    if (!userPrincipalName) {
-      throw new Error('userPrincipalName is required');
-    }
-
-    if (!groupId) {
-      throw new Error('groupId is required');
-    }
 
     // Get base URL and authentication headers using utilities
     const baseUrl = getBaseURL(resolvedParams, context);
@@ -104,7 +95,8 @@ export default {
           status: 'success',
           userPrincipalName,
           groupId,
-          added: true
+          added: true,
+          address: baseUrl
         };
       } else if (response.status === 400) {
         // Bad request - could be user already in group or invalid IDs
@@ -116,7 +108,8 @@ export default {
             userPrincipalName,
             groupId,
             added: false,
-            message: 'User is already a member of the group'
+            message: 'User is already a member of the group',
+            address: baseUrl
           };
         }
         throw new Error(`Bad request: ${errorText}`);

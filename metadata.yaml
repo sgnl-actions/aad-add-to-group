@@ -19,13 +19,13 @@ inputs:
       min: 36
       max: 36
 
-# Required secrets for authentication
-secrets:
-  - AZURE_AD_TOKEN
-
-# Required environment variables
-environment:
-  - AZURE_AD_TENANT_URL
+  address:
+    type: text
+    description: Optional Azure AD API base URL override
+    required: false
+    validation:
+      min: 1
+      max: 100
 
 # Expected output structure
 outputs:
@@ -44,3 +44,7 @@ outputs:
   added:
     type: boolean
     description: Whether the user was successfully added to the group
+
+  address:
+    type: text
+    description: The Azure AD API base URL used
