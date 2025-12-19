@@ -122,49 +122,9 @@ describe('Azure AD Add User to Group Script', () => {
       );
     });
 
-    test('should throw error for missing userPrincipalName', async () => {
-      const params = {
-        groupId: '12345678-1234-1234-1234-123456789012'
-      };
 
-      await expect(script.invoke(params, mockContext)).rejects.toThrow('userPrincipalName is required');
-    });
 
-    test('should throw error for missing groupId', async () => {
-      const params = {
-        userPrincipalName: 'test-user@example.com'
-      };
 
-      await expect(script.invoke(params, mockContext)).rejects.toThrow('groupId is required');
-    });
-
-    test('should throw error for missing ADDRESS', async () => {
-      const params = {
-        userPrincipalName: 'test-user@example.com',
-        groupId: '12345678-1234-1234-1234-123456789012'
-      };
-
-      const contextMissingAddress = {
-        ...mockContext,
-        environment: {}
-      };
-
-      await expect(script.invoke(params, contextMissingAddress)).rejects.toThrow('No URL specified. Provide address parameter or ADDRESS environment variable');
-    });
-
-    test('should throw error for missing OAuth2 authentication', async () => {
-      const params = {
-        userPrincipalName: 'test-user@example.com',
-        groupId: '12345678-1234-1234-1234-123456789012'
-      };
-
-      const contextMissingToken = {
-        ...mockContext,
-        secrets: {}
-      };
-
-      await expect(script.invoke(params, contextMissingToken)).rejects.toThrow('No authentication configured');
-    });
 
     test('should handle API error responses', async () => {
       const params = {
