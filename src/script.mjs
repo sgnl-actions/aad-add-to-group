@@ -4,7 +4,7 @@
  * Adds a user to a group in Azure Active Directory using Microsoft Graph API.
  */
 
-import { getBaseURL, createAuthHeaders} from '@sgnl-actions/utils';
+import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
 
 /**
  * Helper function to add a user to a group in Azure AD
