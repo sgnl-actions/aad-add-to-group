@@ -46,6 +46,10 @@ outputs:
     type: boolean
     description: Whether the user was successfully added to the group
 
+  message:
+    type: text
+    description: Additional context message (e.g., user already a member)
+
   address:
     type: text
     description: The Azure AD API base URL used
