@@ -4,7 +4,7 @@
  * Adds a user to a group in Azure Active Directory using Microsoft Graph API.
  */
 
-import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
+import { getBaseURL, createHeaders } from '@sgnl-actions/utils';
 
 /**
  * Helper function to add a user to a group in Azure AD
@@ -67,7 +67,7 @@ export default {
 
     // Get base URL and authentication headers using utilities
     const baseUrl = getBaseURL(params, context);
-    const headers = await createAuthHeaders(context);
+    const headers = await createHeaders(context);
 
     console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
 
