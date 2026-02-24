@@ -15,16 +15,10 @@ import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
  * @returns {Promise<Response>} - Fetch response object
  */
 async function addUserToGroup(userPrincipalName, groupId, baseUrl, headers) {
-  // URL encode the user principal name for the OData reference
   const encodedUPN = encodeURIComponent(userPrincipalName);
-
-  // URL encode the group ID to handle any special characters
   const encodedGroupId = encodeURIComponent(groupId);
-
-  // Construct the Graph API endpoint
   const url = `${baseUrl}/v1.0/groups/${encodedGroupId}/members/$ref`;
 
-  // Prepare the request body with OData reference to the user
   const requestBody = {
     '@odata.id': `https://graph.microsoft.com/v1.0/users/${encodedUPN}`
   };
@@ -65,6 +59,14 @@ export default {
 
     const { userPrincipalName, groupId } = params;
 
+    // Validate required inputs before making any API calls
+    if (!userPrincipalName || typeof userPrincipalName !== 'string' || !userPrincipalName.trim()) {
+      throw new Error('userPrincipalName parameter is required and cannot be empty');
+    }
+    if (!groupId || typeof groupId !== 'string' || !groupId.trim()) {
+      throw new Error('groupId parameter is required and cannot be empty');
+    }
+
     // Get base URL and authentication headers using utilities
     const baseUrl = getBaseURL(params, context);
     const headers = await createAuthHeaders(context);
@@ -79,9 +81,7 @@ export default {
         headers
       );
 
-      // Handle different response scenarios
       if (response.status === 204) {
-        // Success - user added to group
         console.log(`Successfully added user ${userPrincipalName} to group ${groupId}`);
         return {
           status: 'success',
@@ -91,8 +91,8 @@ export default {
           address: baseUrl
         };
       } else if (response.status === 400) {
-        // Bad request - could be user already in group or invalid IDs
         const errorText = await response.text();
+        // Handle both possible Azure "already a member" error message formats
         if (errorText.includes('already a member') || errorText.includes("modified properties: 'members'")) {
           console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
           return {
@@ -106,7 +106,6 @@ export default {
         }
         throw new Error(`Bad request: ${errorText}`);
       } else {
-        // Other error responses
         const errorText = await response.text();
         throw new Error(`Failed to add user to group: ${response.status} ${response.statusText} - ${errorText}`);
       }
@@ -116,33 +115,16 @@ export default {
     }
   },
 
-  /**
-   * Error recovery handler - framework handles retries by default
-   * Only implement if custom recovery logic is needed
-   * @param {Object} params - Original params plus error information
-   * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
-   */
   error: async (params, _context) => {
     const { error, userPrincipalName, groupId } = params;
     console.error(`User group assignment failed for user ${userPrincipalName} to group ${groupId}: ${error.message}`);
-
-    // Framework handles retries for transient errors (429, 502, 503, 504)
-    // Just re-throw the error to let the framework handle it
     throw error;
   },
 
-  /**
-   * Graceful shutdown handler - performs cleanup
-   * @param {Object} params - Original params plus halt reason
-   * @param {Object} context - Execution context
-   * @returns {Object} Cleanup results
-   */
   halt: async (params, _context) => {
     const { reason, userPrincipalName, groupId } = params;
     console.log(`Azure AD add user to group operation halted: ${reason}`);
 
-    // No specific cleanup needed for this operation
     return {
       status: 'halted',
       userPrincipalName: userPrincipalName || 'unknown',

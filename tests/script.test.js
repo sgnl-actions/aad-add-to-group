@@ -250,4 +250,233 @@ describe('Azure AD Add User to Group Script', () => {
       expect(result.reason).toBe('system_shutdown');
     });
   });
+
+  describe('invoke handler - idempotency', () => {
+    test('should succeed on first call with added:true', async () => {
+      global.fetch.mockResolvedValueOnce({ status: 204, ok: true });
+
+      const result = await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      expect(result.status).toBe('success');
+      expect(result.added).toBe(true);
+    });
+
+    test('should succeed on second call with added:false (already a member)', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 400, ok: false,
+        text: jest.fn().mockResolvedValue('User is already a member of the group')
+      });
+
+      const result = await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      expect(result.status).toBe('success');
+      expect(result.added).toBe(false);
+    });
+
+    test('should produce same end state on repeated calls', async () => {
+      global.fetch
+        .mockResolvedValueOnce({ status: 204, ok: true })
+        .mockResolvedValueOnce({
+          status: 400, ok: false,
+          text: jest.fn().mockResolvedValue('User is already a member of the group')
+        });
+
+      const r1 = await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      const r2 = await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      // Both succeed — idempotent
+      expect(r1.status).toBe('success');
+      expect(r2.status).toBe('success');
+      expect(r1.userPrincipalName).toBe(r2.userPrincipalName);
+      expect(r1.groupId).toBe(r2.groupId);
+    });
+
+    test('should handle real Azure already-member error message', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 400, ok: false,
+        text: jest.fn().mockResolvedValue(JSON.stringify({
+          error: {
+            code: 'Request_BadRequest',
+            message: "One or more added object references already exist for the following modified properties: 'members'."
+          }
+        }))
+      });
+
+      const result = await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      expect(result.status).toBe('success');
+      expect(result.added).toBe(false);
+    });
+  });
+
+  describe('invoke handler - input validation', () => {
+    test('should throw when userPrincipalName is missing', async () => {
+      await expect(script.invoke({
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext)).rejects.toThrow('userPrincipalName parameter is required and cannot be empty');
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('should throw when groupId is missing', async () => {
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com'
+      }, mockContext)).rejects.toThrow('groupId parameter is required and cannot be empty');
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    test('should throw when auth token is missing', async () => {
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, { environment: { ADDRESS: 'https://graph.microsoft.com' }, secrets: {} }))
+        .rejects.toThrow(/No authentication configured/);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('invoke handler - request construction', () => {
+    test('should use custom address from params over environment ADDRESS', async () => {
+      global.fetch.mockResolvedValueOnce({ status: 204, ok: true });
+
+      await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012',
+        address: 'https://custom-proxy.example.com'
+      }, mockContext);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('https://custom-proxy.example.com'),
+        expect.any(Object)
+      );
+    });
+
+    test('should include User-Agent header', async () => {
+      global.fetch.mockResolvedValueOnce({ status: 204, ok: true });
+
+      await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'User-Agent': SGNL_USER_AGENT })
+        })
+      );
+    });
+
+    test('should strip trailing slash from base URL', async () => {
+      global.fetch.mockResolvedValueOnce({ status: 204, ok: true });
+
+      await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, {
+        ...mockContext,
+        environment: { ADDRESS: 'https://graph.microsoft.com/' } // trailing slash
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.not.stringContaining('//v1.0'),
+        expect.any(Object)
+      );
+    });
+
+    test('should use OData reference format in request body', async () => {
+      global.fetch.mockResolvedValueOnce({ status: 204, ok: true });
+
+      await script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext);
+
+      const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+      expect(body['@odata.id']).toMatch(/^https:\/\/graph\.microsoft\.com\/v1\.0\/users\//);
+    });
+  });
+
+  describe('invoke handler - error responses', () => {
+    test('should throw on 401 Unauthorized', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 401, statusText: 'Unauthorized', ok: false,
+        text: jest.fn().mockResolvedValue('{"error":{"code":"InvalidAuthenticationToken"}}')
+      });
+
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext)).rejects.toThrow(/401 Unauthorized/);
+    });
+
+    test('should throw on 403 Forbidden', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 403, statusText: 'Forbidden', ok: false,
+        text: jest.fn().mockResolvedValue('{"error":{"code":"Authorization_RequestDenied"}}')
+      });
+
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext)).rejects.toThrow(/403 Forbidden/);
+    });
+
+    test('should throw on 404 Not Found', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 404, statusText: 'Not Found', ok: false,
+        text: jest.fn().mockResolvedValue('{"error":{"code":"Request_ResourceNotFound"}}')
+      });
+
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext)).rejects.toThrow(/404 Not Found/);
+    });
+
+    test('should throw on 429 Too Many Requests', async () => {
+      global.fetch.mockResolvedValueOnce({
+        status: 429, statusText: 'Too Many Requests', ok: false,
+        text: jest.fn().mockResolvedValue('{"error":{"code":"TooManyRequests"}}')
+      });
+
+      await expect(script.invoke({
+        userPrincipalName: 'user@example.com',
+        groupId: '12345678-1234-1234-1234-123456789012'
+      }, mockContext)).rejects.toThrow(/429/);
+    });
+  });
+
+  describe('halt handler - edge cases', () => {
+    test('should handle halt with no params at all', async () => {
+      const result = await script.halt({}, mockContext);
+
+      expect(result.status).toBe('halted');
+      expect(result.userPrincipalName).toBe('unknown');
+      expect(result.groupId).toBe('unknown');
+      expect(result.reason).toBeUndefined();
+      expect(result.halted_at).toBeDefined();
+    });
+
+    test('should include ISO timestamp in halted_at', async () => {
+      const result = await script.halt({ reason: 'test' }, mockContext);
+      expect(new Date(result.halted_at).toISOString()).toBe(result.halted_at);
+    });
+  });
 });
