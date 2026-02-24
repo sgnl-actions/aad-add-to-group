@@ -1,0 +1,110 @@
+{
+  "aad-oauth-token": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "token_type": "Bearer",
+      "expires_in": 3599,
+      "ext_expires_in": 3599,
+      "access_token": "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkZXWUlCU0dWcmJhb0U1RzFxdXpfbzM2VHdiWWJZSjdJd1gxOVVvMUtoVzAiLCJhbGciOiJSUzI1NiIsIng1dCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyIsImtpZCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9jZjFjODIyNS0xOWVjLTQ4YjItODI3Zi1kNWE3YzgwYmVhMjIvIiwiaWF0IjoxNzcxOTczOTI1LCJuYmYiOjE3NzE5NzM5MjUsImV4cCI6MTc3MTk3NzgyNSwiYWlvIjoiazJaZ1lOQ3dYUy9aSXZPbzBzTGltTVdKSERFWEFBPT0iLCJhcHBfZGlzcGxheW5hbWUiOiJzZ25sLXRlc3QiLCJhcHBpZCI6ImY4MGQ0YzJiLWU3MTktNDk2My04NGJjLTU4YzA2ZThiY2Q4YSIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0L2NmMWM4MjI1LTE5ZWMtNDhiMi04MjdmLWQ1YTdjODBiZWEyMi8iLCJpZHR5cCI6ImFwcCIsIm9pZCI6IjcwM2M2YjBhLTRiMmItNGQzMi1hZDYzLWE4MTM2MDg0ZTIwNSIsInJoIjoiMS5BY29BSllJY3otd1pza2lDZjlXbnlBdnFJZ01BQUFBQUFBQUF3QUFBQUFBQUFBQUFBQURLQUEuIiwicm9sZXMiOlsiR3JvdXAuUmVhZC5BbGwiLCJEaXJlY3RvcnkuUmVhZC5BbGwiLCJVc2VyLlJlYWQuQWxsIiwiUm9sZU1hbmFnZW1lbnQuUmVhZFdyaXRlLkRpcmVjdG9yeSIsIkdyb3VwTWVtYmVyLlJlYWRXcml0ZS5BbGwiXSwic3ViIjoiNzAzYzZiMGEtNGIyYi00ZDMyLWFkNjMtYTgxMzYwODRlMjA1IiwidGVuYW50X3JlZ2lvbl9zY29wZSI6Ik5BIiwidGlkIjoiY2YxYzgyMjUtMTllYy00OGIyLTgyN2YtZDVhN2M4MGJlYTIyIiwidXRpIjoiN1NDbkQ4cUd6RWVRaEpxLW9kY1VBQSIsInZlciI6IjEuMCIsIndpZHMiOlsiMDk5N2ExZDAtMGQxZC00YWNiLWI0MDgtZDVjYTczMTIxZTkwIl0sInhtc19hY2QiOjE3NzE5NjExMjQsInhtc19hY3RfZmN0IjoiOSAzIiwieG1zX2Z0ZCI6ImhETW94ai12b2JyTFlQelZfYzJ6TURBYXFnZlEzUTBhcUFBOU9jMm9FRWtCZFhOemIzVjBhQzFrYzIxeiIsInhtc19pZHJlbCI6IjQgNyIsInhtc19yZCI6IjAuNDJMallCSmlPc1VvSk1MQkxpUVFYaDRRSWNZUjZUc3Q1di1jMngyYm00Q2luRUlDdTdxZm51Y01zUEtiZTZmMmRNSmZtV2xBVVE0aEFXWUdDRGdBcFlHaTNFSUMxUV9QWnk5VHVyRlFaWHJpZ1lPOUxPOEIiLCJ4bXNfc3ViX2ZjdCI6IjkgMyIsInhtc190Y2R0IjoxNzcxOTYwOTE4LCJ4bXNfdG50X2ZjdCI6IjMgMiJ9.cqZ_JSr2sbVsnIPWIqctAMom_kUaO-HhX2x_LO--aZ3TymlxhCZcnROzJCrWY9awVihZo6IOS5YV4jE4j1pRMMkLHT8T3Sx9EtixSLXyPZJqfg7Aun4tHV2UJtjim1vow_NnH0iqX8kpeTg1ByeWMpMwGc2eBcZpS-arpWg9JM6ED1BT91EqRzak7lzrCwblYZpIDYkSAfe9QBH_AMtCcRu-vwMqirTNgvA-_k4m-tGUUQBFerjcoRy3AP6s007ltEY46CMMvWGDc-9yKuVCBu-yKqn7__zc5sXvdiiZub-Ys8cilGOtKA1bxrZGLNr2vrPpA7j0as-sxNZuQm7FGg"
+    }
+  },
+  "aad-add-user": {
+    "status": 204,
+    "ok": true,
+    "statusText": "No Content",
+    "body": ""
+  },
+  "aad-oauth-token-2": {
+    "status": 200,
+    "ok": true,
+    "statusText": "OK",
+    "body": {
+      "token_type": "Bearer",
+      "expires_in": 3599,
+      "ext_expires_in": 3599,
+      "access_token": "eyJ0eXAiOiJKV1QiLCJub25jZSI6IkFRU00xVDhydHItYUpaY1g3M1NzTmNKVGpELXpvWk9RUmV1aGVXcnlXVTAiLCJhbGciOiJSUzI1NiIsIng1dCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyIsImtpZCI6InNNMV95QXhWOEdWNHlOLUI2ajJ4em1pazVBbyJ9.eyJhdWQiOiJodHRwczovL2dyYXBoLm1pY3Jvc29mdC5jb20iLCJpc3MiOiJodHRwczovL3N0cy53aW5kb3dzLm5ldC9jZjFjODIyNS0xOWVjLTQ4YjItODI3Zi1kNWE3YzgwYmVhMjIvIiwiaWF0IjoxNzcxOTczOTI1LCJuYmYiOjE3NzE5NzM5MjUsImV4cCI6MTc3MTk3NzgyNSwiYWlvIjoiazJaZ1lKaHQ0UmVzZWtTajNYSEI3RjNUWnh3U0J3QT0iLCJhcHBfZGlzcGxheW5hbWUiOiJzZ25sLXRlc3QiLCJhcHBpZCI6ImY4MGQ0YzJiLWU3MTktNDk2My04NGJjLTU4YzA2ZThiY2Q4YSIsImFwcGlkYWNyIjoiMSIsImlkcCI6Imh0dHBzOi8vc3RzLndpbmRvd3MubmV0L2NmMWM4MjI1LTE5ZWMtNDhiMi04MjdmLWQ1YTdjODBiZWEyMi8iLCJpZHR5cCI6ImFwcCIsIm9pZCI6IjcwM2M2YjBhLTRiMmItNGQzMi1hZDYzLWE4MTM2MDg0ZTIwNSIsInJoIjoiMS5BY29BSllJY3otd1pza2lDZjlXbnlBdnFJZ01BQUFBQUFBQUF3QUFBQUFBQUFBQUFBQURLQUEuIiwicm9sZXMiOlsiR3JvdXAuUmVhZC5BbGwiLCJEaXJlY3RvcnkuUmVhZC5BbGwiLCJVc2VyLlJlYWQuQWxsIiwiUm9sZU1hbmFnZW1lbnQuUmVhZFdyaXRlLkRpcmVjdG9yeSIsIkdyb3VwTWVtYmVyLlJlYWRXcml0ZS5BbGwiXSwic3ViIjoiNzAzYzZiMGEtNGIyYi00ZDMyLWFkNjMtYTgxMzYwODRlMjA1IiwidGVuYW50X3JlZ2lvbl9zY29wZSI6Ik5BIiwidGlkIjoiY2YxYzgyMjUtMTllYy00OGIyLTgyN2YtZDVhN2M4MGJlYTIyIiwidXRpIjoiMTczaXNqOFNwa2lBYm9qRE5wQWdBQSIsInZlciI6IjEuMCIsIndpZHMiOlsiMDk5N2ExZDAtMGQxZC00YWNiLWI0MDgtZDVjYTczMTIxZTkwIl0sInhtc19hY2QiOjE3NzE5NjExMjQsInhtc19hY3RfZmN0IjoiMyA5IiwieG1zX2Z0ZCI6IkhhMmo4UDBaRERYb09teTR0ZjJBNXpFTmNiUjY5N2ZXWXFsZm5mRUplcU1CZFhOdWIzSjBhQzFrYzIxeiIsInhtc19pZHJlbCI6IjcgMjAiLCJ4bXNfcmQiOiIwLjQyTGpZQkppT3NVb0pNTEJMaVFRWGg0UUljWVI2VHN0NXYtYzJ4MmJtNENpbkVJQ3U3cWZudWNNc1BLYmU2ZjJkTUpmbVdsQVVRNGhBV1lHQ0RnQXBZR2kzRUlDMVFfUFp5OVR1ckZRWlhyaWdZTzlMTzhCIiwieG1zX3N1Yl9mY3QiOiI5IDMiLCJ4bXNfdGNkdCI6MTc3MTk2MDkxOCwieG1zX3RudF9mY3QiOiIzIDQifQ.oR3idsZfTx2oHzLZ3IW9hUsWIqBQ1Cie-x7y3cBCZcI7OqYUbYwM7In8TT9f8casgGqd3OWw3Oez0-DOMkkR9XPTzXPF60oid5hmSLkVrkU0xQnw6nLFE78Xt0NXG_rlhG32tGVa8S1Hy0aqfvh10Ht2wPuVax24h-jx7AMAWBPRiy4KLCIbvFTQzVKLKPczBu59AWpIP9LUQlAQlmBMT8SfimxyjJPNUrTsUeTFFRvAMy6mWSkXye8KCLLDHLy85tnwOHu63qT18NPdsc4GMzqC3tZ42BBSkh5Qn2hDdnPIX9lrG1m7W7AFCT18x4Wdcy6LzDiNU2n8j-qWl308Pg"
+    }
+  },
+  "aad-add-user-already-member": {
+    "status": 400,
+    "ok": false,
+    "statusText": "Bad Request",
+    "body": {
+      "error": {
+        "code": "Request_BadRequest",
+        "message": "One or more added object references already exist for the following modified properties: 'members'.",
+        "innerError": {
+          "date": "2026-02-24T23:03:46",
+          "request-id": "d632acf3-036c-4342-8cef-36773ac61a04",
+          "client-request-id": "d632acf3-036c-4342-8cef-36773ac61a04"
+        }
+      }
+    }
+  },
+  "aad-group-not-found": {
+    "status": 401,
+    "ok": false,
+    "statusText": "Unauthorized",
+    "body": {
+      "error": {
+        "code": "InvalidAuthenticationToken",
+        "message": "IDX14100: JWT is not well formed, there are no dots (.).\nThe token needs to be in JWS or JWE Compact Serialization Format. (JWS): 'EncodedHeader.EncodedPayload.EncodedSignature'. (JWE): 'EncodedProtectedHeader.EncodedEncryptedKey.EncodedInitializationVector.EncodedCiphertext.EncodedAuthenticationTag'.",
+        "innerError": {
+          "date": "2026-02-24T23:03:46",
+          "request-id": "05246999-895e-425c-8494-84a9d1750d3c",
+          "client-request-id": "05246999-895e-425c-8494-84a9d1750d3c"
+        }
+      }
+    }
+  },
+  "aad-user-not-found": {
+    "status": 401,
+    "ok": false,
+    "statusText": "Unauthorized",
+    "body": {
+      "error": {
+        "code": "InvalidAuthenticationToken",
+        "message": "IDX14100: JWT is not well formed, there are no dots (.).\nThe token needs to be in JWS or JWE Compact Serialization Format. (JWS): 'EncodedHeader.EncodedPayload.EncodedSignature'. (JWE): 'EncodedProtectedHeader.EncodedEncryptedKey.EncodedInitializationVector.EncodedCiphertext.EncodedAuthenticationTag'.",
+        "innerError": {
+          "date": "2026-02-24T23:03:46",
+          "request-id": "9cfe7467-4d43-41d0-ba99-9c9b4cd3dc0b",
+          "client-request-id": "9cfe7467-4d43-41d0-ba99-9c9b4cd3dc0b"
+        }
+      }
+    }
+  },
+  "aad-unauthorized": {
+    "status": 401,
+    "ok": false,
+    "statusText": "Unauthorized",
+    "body": {
+      "error": {
+        "code": "InvalidAuthenticationToken",
+        "message": "IDX14100: JWT is not well formed, there are no dots (.).\nThe token needs to be in JWS or JWE Compact Serialization Format. (JWS): 'EncodedHeader.EncodedPayload.EncodedSignature'. (JWE): 'EncodedProtectedHeader.EncodedEncryptedKey.EncodedInitializationVector.EncodedCiphertext.EncodedAuthenticationTag'.",
+        "innerError": {
+          "date": "2026-02-24T23:03:46",
+          "request-id": "fd5ff368-a7ba-4ee6-8719-c0b173abf6c3",
+          "client-request-id": "fd5ff368-a7ba-4ee6-8719-c0b173abf6c3"
+        }
+      }
+    }
+  },
+  "aad-forbidden": {
+    "status": 401,
+    "ok": false,
+    "statusText": "Unauthorized",
+    "body": {
+      "error": {
+        "code": "InvalidAuthenticationToken",
+        "message": "IDX14100: JWT is not well formed, there are no dots (.).\nThe token needs to be in JWS or JWE Compact Serialization Format. (JWS): 'EncodedHeader.EncodedPayload.EncodedSignature'. (JWE): 'EncodedProtectedHeader.EncodedEncryptedKey.EncodedInitializationVector.EncodedCiphertext.EncodedAuthenticationTag'.",
+        "innerError": {
+          "date": "2026-02-24T23:03:46",
+          "request-id": "d163401e-e741-4847-abe2-6d7c77670071",
+          "client-request-id": "d163401e-e741-4847-abe2-6d7c77670071"
+        }
+      }
+    }
+  }
+}

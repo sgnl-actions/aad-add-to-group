@@ -4,7 +4,7 @@
  * Adds a user to a group in Azure Active Directory using Microsoft Graph API.
  */
 
-import { getBaseURL, createAuthHeaders} from '@sgnl-actions/utils';
+import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
 
 /**
  * Helper function to add a user to a group in Azure AD
@@ -93,7 +93,7 @@ export default {
       } else if (response.status === 400) {
         // Bad request - could be user already in group or invalid IDs
         const errorText = await response.text();
-        if (errorText.includes('already a member')) {
+        if (errorText.includes('already a member') || errorText.includes("modified properties: 'members'")) {
           console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
           return {
             status: 'success',

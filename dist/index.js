@@ -272,7 +272,7 @@ var script = {
       } else if (response.status === 400) {
         // Bad request - could be user already in group or invalid IDs
         const errorText = await response.text();
-        if (errorText.includes('already a member')) {
+        if (errorText.includes('already a member') || errorText.includes("modified properties: 'members'")) {
           console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
           return {
             status: 'success',
