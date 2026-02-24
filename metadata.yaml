@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/sgnl-actions/schemas/main/metadata.schema.json
 name: aad-add-to-group
 description: Add a user to a group in Azure Active Directory
 
@@ -44,6 +45,10 @@ outputs:
   added:
     type: boolean
     description: Whether the user was successfully added to the group
+
+  message:
+    type: text
+    description: Additional context message (e.g., user already a member)
 
   address:
     type: text

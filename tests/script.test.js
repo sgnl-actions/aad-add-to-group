@@ -5,6 +5,7 @@ import { SGNL_USER_AGENT } from '@sgnl-actions/utils';
 // Mock fetch globally
 global.fetch = jest.fn();
 global.URL = URL;
+
 describe('Azure AD Add User to Group Script', () => {
   const mockContext = {
     environment: {
