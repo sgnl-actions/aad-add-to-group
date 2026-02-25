@@ -178,7 +178,7 @@ The error handler implements exponential backoff with a 5-second initial delay f
 
 ```bash
 # Run with mock parameters
-npm run dev -- --params '{"userPrincipalName": "test@example.com", "groupId": "12345678-1234-1234-1234-123456789012"}'
+npm run dev -- --params '{"userPrincipalName": "test@example.com", "groupId": "12345678-1234-1234-1234-123456789012"}'  --secrets '{"OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET":"xxx","OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID":"xxx","OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL":"xxx","OAUTH2_CLIENT_CREDENTIALS_SCOPE":"https://graph.microsoft.com/.default"}'
 
 # Run unit tests
 npm test
