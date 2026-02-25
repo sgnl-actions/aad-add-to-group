@@ -1,4 +1,3 @@
-/* global beforeAll, afterAll */
 import { jest } from '@jest/globals';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { request } from 'https';
@@ -62,7 +61,7 @@ function makeRecordReplayFetch(fixtures, key) {
       return {
         ok: res.ok, status: res.status, statusText: res.statusText,
         json: async () => res.body,
-        text: async () => (typeof res.body === 'string' ? res.body : JSON.stringify(res.body ?? ''))
+        text: async () => (typeof res.body === 'string' ? res.body : JSON.stringify(res.body ?? '')),
       };
     }
 
@@ -72,7 +71,7 @@ function makeRecordReplayFetch(fixtures, key) {
     return {
       ok: fixture.ok, status: fixture.status, statusText: fixture.statusText,
       json: async () => fixture.body,
-      text: async () => (typeof fixture.body === 'string' ? fixture.body : JSON.stringify(fixture.body ?? ''))
+      text: async () => (typeof fixture.body === 'string' ? fixture.body : JSON.stringify(fixture.body ?? '')),
     };
   };
 }
@@ -80,42 +79,8 @@ function makeRecordReplayFetch(fixtures, key) {
 describe('AAD Add User to Group - Record & Replay', () => {
   let fixtures = {};
 
-  beforeAll(async () => {
+  beforeAll(() => {
     fixtures = loadFixtures();
-
-    // In record mode, remove the user from the group before recording starts.
-    // This ensures test 1 always starts with a clean state (user not in group).
-    // Cleanup at the START rather than end avoids Azure propagation delays
-    // that occur when running record mode back to back immediately.
-    if (IS_RECORDING) {
-      try {
-        const tokenRes = await httpsRequest(
-          process.env.AZURE_TOKEN_URL,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `client_id=${process.env.AZURE_CLIENT_ID}&client_secret=${process.env.AZURE_CLIENT_SECRET}&scope=https://graph.microsoft.com/.default&grant_type=client_credentials`
-          }
-        );
-        const token = tokenRes.body.access_token;
-
-        const userRes = await httpsRequest(
-          `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(process.env.AZURE_TEST_UPN)}`,
-          { method: 'GET', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } }
-        );
-        const userId = userRes.body.id;
-
-        await httpsRequest(
-          `https://graph.microsoft.com/v1.0/groups/${process.env.AZURE_GROUP_ID}/members/${userId}/$ref`,
-          { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }
-        );
-
-        console.log(`Pre-test cleanup: removed ${process.env.AZURE_TEST_UPN} from group`);
-      } catch (e) {
-        // User may not be in group — that's fine, proceed with recording
-        console.log(`Pre-test cleanup: user not in group or already removed (${e.message})`);
-      }
-    }
   });
 
   afterAll(async () => {
@@ -139,7 +104,7 @@ describe('AAD Add User to Group - Record & Replay', () => {
       ADDRESS: 'https://graph.microsoft.com',
       OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL: process.env.AZURE_TOKEN_URL || 'https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token',
       OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID: process.env.AZURE_CLIENT_ID || 'test-client-id',
-      OAUTH2_CLIENT_CREDENTIALS_SCOPE: 'https://graph.microsoft.com/.default'
+      OAUTH2_CLIENT_CREDENTIALS_SCOPE: 'https://graph.microsoft.com/.default',
     },
     secrets: {
       OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || 'test-client-secret'
@@ -165,8 +130,26 @@ describe('AAD Add User to Group - Record & Replay', () => {
   // Both calls return status:'success' — same end state.
   // Synthetic fixtures for error scenarios that can't be triggered with valid credentials.
   // These are injected directly as mock responses, bypassing makeRecordReplayFetch entirely.
+  const syntheticFixtures = {
+    'aad-group-not-found': { status: 404, ok: false, statusText: 'Not Found', body: { error: { code: 'Request_ResourceNotFound', message: 'Resource not found' } } },
+    'aad-user-not-found': { status: 404, ok: false, statusText: 'Not Found', body: { error: { code: 'Request_ResourceNotFound', message: 'Resource not found' } } },
+    'aad-unauthorized': { status: 401, ok: false, statusText: 'Unauthorized', body: { error: { code: 'InvalidAuthenticationToken', message: 'Access token is invalid' } } },
+    'aad-forbidden': { status: 403, ok: false, statusText: 'Forbidden', body: { error: { code: 'Authorization_RequestDenied', message: 'Insufficient privileges' } } },
+    'aad-add-user-already-member': { status: 400, ok: false, statusText: 'Bad Request', body: JSON.stringify({ error: { code: 'Request_BadRequest', message: "One or more added object references already exist for the following modified properties: 'members'." } }) },
+  };
+
+  function syntheticFetch(key) {
+    const f = syntheticFixtures[key];
+    return async () => ({
+      ok: f.ok, status: f.status, statusText: f.statusText,
+      json: async () => f.body,
+      text: async () => (typeof f.body === 'string' ? f.body : JSON.stringify(f.body ?? '')),
+    });
+  }
+
   test('should add user to group successfully on first call', async () => {
-    // createAuthHeaders fetches OAuth2 token first, then the Graph API call
+    // Prerequisite: user must NOT be in the group before recording.
+    // Manually remove them first if needed.
     fetch
       .mockImplementationOnce(makeRecordReplayFetch(fixtures, 'aad-oauth-token'))
       .mockImplementationOnce(makeRecordReplayFetch(fixtures, 'aad-add-user'));
