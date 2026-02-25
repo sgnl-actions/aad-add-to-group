@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { beforeAll, afterAll, jest } from '@jest/globals';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { request } from 'https';
 import script from '../src/script.mjs';
@@ -61,7 +61,7 @@ function makeRecordReplayFetch(fixtures, key) {
       return {
         ok: res.ok, status: res.status, statusText: res.statusText,
         json: async () => res.body,
-        text: async () => (typeof res.body === 'string' ? res.body : JSON.stringify(res.body ?? '')),
+        text: async () => (typeof res.body === 'string' ? res.body : JSON.stringify(res.body ?? ''))
       };
     }
 
@@ -71,7 +71,7 @@ function makeRecordReplayFetch(fixtures, key) {
     return {
       ok: fixture.ok, status: fixture.status, statusText: fixture.statusText,
       json: async () => fixture.body,
-      text: async () => (typeof fixture.body === 'string' ? fixture.body : JSON.stringify(fixture.body ?? '')),
+      text: async () => (typeof fixture.body === 'string' ? fixture.body : JSON.stringify(fixture.body ?? ''))
     };
   };
 }
@@ -104,7 +104,7 @@ describe('AAD Add User to Group - Record & Replay', () => {
       ADDRESS: 'https://graph.microsoft.com',
       OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL: process.env.AZURE_TOKEN_URL || 'https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token',
       OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID: process.env.AZURE_CLIENT_ID || 'test-client-id',
-      OAUTH2_CLIENT_CREDENTIALS_SCOPE: 'https://graph.microsoft.com/.default',
+      OAUTH2_CLIENT_CREDENTIALS_SCOPE: 'https://graph.microsoft.com/.default'
     },
     secrets: {
       OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET: process.env.AZURE_CLIENT_SECRET || 'test-client-secret'
@@ -128,25 +128,6 @@ describe('AAD Add User to Group - Record & Replay', () => {
   // First call adds the user (204). Second call finds user already in group (400
   // with "already a member") which the script handles as a success with added:false.
   // Both calls return status:'success' — same end state.
-  // Synthetic fixtures for error scenarios that can't be triggered with valid credentials.
-  // These are injected directly as mock responses, bypassing makeRecordReplayFetch entirely.
-  const syntheticFixtures = {
-    'aad-group-not-found': { status: 404, ok: false, statusText: 'Not Found', body: { error: { code: 'Request_ResourceNotFound', message: 'Resource not found' } } },
-    'aad-user-not-found': { status: 404, ok: false, statusText: 'Not Found', body: { error: { code: 'Request_ResourceNotFound', message: 'Resource not found' } } },
-    'aad-unauthorized': { status: 401, ok: false, statusText: 'Unauthorized', body: { error: { code: 'InvalidAuthenticationToken', message: 'Access token is invalid' } } },
-    'aad-forbidden': { status: 403, ok: false, statusText: 'Forbidden', body: { error: { code: 'Authorization_RequestDenied', message: 'Insufficient privileges' } } },
-    'aad-add-user-already-member': { status: 400, ok: false, statusText: 'Bad Request', body: JSON.stringify({ error: { code: 'Request_BadRequest', message: "One or more added object references already exist for the following modified properties: 'members'." } }) },
-  };
-
-  function syntheticFetch(key) {
-    const f = syntheticFixtures[key];
-    return async () => ({
-      ok: f.ok, status: f.status, statusText: f.statusText,
-      json: async () => f.body,
-      text: async () => (typeof f.body === 'string' ? f.body : JSON.stringify(f.body ?? '')),
-    });
-  }
-
   test('should add user to group successfully on first call', async () => {
     // Prerequisite: user must NOT be in the group before recording.
     // Manually remove them first if needed.
