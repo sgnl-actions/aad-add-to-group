@@ -1,0 +1,10 @@
+HTTP/2 401
+content-type: application/json
+strict-transport-security: max-age=31536000
+request-id: ce96fdff-dd14-4b7b-a96c-e9e22214ad54
+client-request-id: ce96fdff-dd14-4b7b-a96c-e9e22214ad54
+x-ms-ags-diagnostic: {"ServerInfo":{"DataCenter":"West US 2","Slice":"E","Ring":"4","ScaleUnit":"001","RoleInstance":"MW2PEPF000138F7"}}
+www-authenticate: Bearer realm="", authorization_uri="https://login.microsoftonline.com/common/oauth2/authorize", client_id="00000003-0000-0000-c000-000000000000"
+date: Wed, 25 Feb 2026 21:12:13 GMT
+
+{"error":{"code":"InvalidAuthenticationToken","message":"IDX14100: JWT is not well formed, there are no dots (.).\nThe token needs to be in JWS or JWE Compact Serialization Format. (JWS): 'EncodedHeader.EncodedPayload.EncodedSignature'. (JWE): 'EncodedProtectedHeader.EncodedEncryptedKey.EncodedInitializationVector.EncodedCiphertext.EncodedAuthenticationTag'.","innerError":{"date":"2026-02-25T21:12:14","request-id":"ce96fdff-dd14-4b7b-a96c-e9e22214ad54","client-request-id":"ce96fdff-dd14-4b7b-a96c-e9e22214ad54"}}}
