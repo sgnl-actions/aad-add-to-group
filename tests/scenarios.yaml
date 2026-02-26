@@ -22,6 +22,10 @@ scenarios:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
       - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
+      - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
         fixture: fixtures/204-no-content.http
@@ -42,15 +46,16 @@ scenarios:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
       - request:
-          method: POST
-          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
-        fixture: fixtures/400-already-member.http
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-existing-membership.http
     invoke:
       returns:
         status: success
         userPrincipalName: testuser@yourtenant.onmicrosoft.com
         groupId: 12345678-1234-1234-1234-123456789012
         added: false
+        message: User is already a member of the group
         address: https://graph.microsoft.com
 
   - name: user or group not found
@@ -62,11 +67,11 @@ scenarios:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
       - request:
-          method: POST
-          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
         fixture: fixtures/404-user-not-found.http
     invoke:
-      throws: "Failed to add user to group"
+      throws: "Failed to check group membership"
 
   - name: unauthorized - invalid token
     steps:
@@ -77,11 +82,11 @@ scenarios:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
       - request:
-          method: POST
-          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
         fixture: fixtures/401-unauthorized.http
     invoke:
-      throws: "Failed to add user to group"
+      throws: "Failed to check group membership"
 
   - name: insufficient permissions
     steps:
@@ -92,13 +97,13 @@ scenarios:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
       - request:
-          method: POST
-          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
         fixture: fixtures/403-forbidden.http
     invoke:
-      throws: "Failed to add user to group"
+      throws: "Failed to check group membership"
 
-  - name: server error
+  - name: server error on add
     steps:
       - request:
           method: POST
@@ -106,6 +111,10 @@ scenarios:
           headers:
             Content-Type: application/x-www-form-urlencoded
         fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
       - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref

@@ -1,17 +1,24 @@
 # Azure AD Add User to Group Action
 
-This action adds a user to a group in Azure Active Directory using the Microsoft Graph API.
+This action adds a user to a group in Azure Active Directory using the Microsoft Graph API. The action is idempotent - it checks if the user is already a member before attempting to add them, ensuring safe repeated executions.
 
 ## Overview
 
 The Azure AD Add User to Group action enables automated group membership management by adding users to Azure AD security groups or Microsoft 365 groups. It handles URL encoding, error scenarios, and provides comprehensive retry logic for reliable execution.
+
+### Idempotent Behavior
+
+The action first checks if the user is already a member of the target group:
+- **If user is not a member**: Adds the user to the group and returns `added: true`
+- **If user is already a member**: Returns success without making changes and `added: false`
+- **Safe for retries**: Can be called multiple times with the same parameters without side effects
 
 ## Prerequisites
 
 - Azure AD tenant with appropriate permissions
 - Application registered in Azure AD with the following Microsoft Graph permissions:
   - `GroupMember.ReadWrite.All` (to add users to groups)
-  - `User.Read.All` (to validate user existence)
+  - `User.Read.All` (to validate user existence and check group membership)
   - `Group.Read.All` (to validate group existence)
 
 ## Configuration
@@ -56,9 +63,34 @@ This action supports two OAuth2 authentication methods:
 | `status` | string | Operation result (success, failed, etc.) |
 | `userPrincipalName` | string | User Principal Name that was processed |
 | `groupId` | string | Azure AD Group ID that was processed |
-| `added` | boolean | Whether the user was successfully added to the group |
+| `added` | boolean | Whether the user was added to the group (`true`) or was already a member (`false`) |
 | `address` | string | The Azure AD API base URL used |
-| `message` | string | Optional message providing additional context (e.g., when user is already a member)
+| `message` | string | Optional message providing additional context (included when user is already a member)
+
+#### Example Outputs
+
+**First execution (user added)**:
+```json
+{
+  "status": "success",
+  "userPrincipalName": "john.doe@company.com",
+  "groupId": "12345678-1234-1234-1234-123456789012",
+  "added": true,
+  "address": "https://graph.microsoft.com"
+}
+```
+
+**Subsequent execution (user already member)**:
+```json
+{
+  "status": "success",
+  "userPrincipalName": "john.doe@company.com", 
+  "groupId": "12345678-1234-1234-1234-123456789012",
+  "added": false,
+  "message": "User is already a member of the group",
+  "address": "https://graph.microsoft.com"
+}
+```
 
 ## Usage Examples
 

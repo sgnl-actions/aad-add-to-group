@@ -7,6 +7,32 @@
 import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
 
 /**
+ * Helper function to check if user is already a member of the group
+ * @param {string} userPrincipalName - User Principal Name (UPN) of the user
+ * @param {string} groupId - Azure AD Group ID (GUID)
+ * @param {string} baseUrl - Azure AD base URL
+ * @param {Object} headers - Request headers with Authorization
+ * @returns {Promise<boolean>} - True if user is already a member, false otherwise
+ */
+async function isUserInGroup(userPrincipalName, groupId, baseUrl, headers) {
+  const encodedUPN = encodeURIComponent(userPrincipalName);
+  const encodedGroupId = encodeURIComponent(groupId);
+  const url = `${baseUrl}/v1.0/users/${encodedUPN}/memberOf?$filter=id eq '${encodedGroupId}'`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to check group membership: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.value && data.value.length > 0;
+}
+
+/**
  * Helper function to add a user to a group in Azure AD
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
@@ -71,9 +97,31 @@ export default {
     const baseUrl = getBaseURL(params, context);
     const headers = await createAuthHeaders(context);
 
-    console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
+    console.log(`Checking if user ${userPrincipalName} is already in group ${groupId}`);
 
     try {
+      // First, check if user is already a member of the group
+      const isAlreadyMember = await isUserInGroup(
+        userPrincipalName,
+        groupId,
+        baseUrl,
+        headers
+      );
+
+      if (isAlreadyMember) {
+        console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
+        return {
+          status: 'success',
+          userPrincipalName,
+          groupId,
+          added: false,
+          message: 'User is already a member of the group',
+          address: baseUrl
+        };
+      }
+
+      // User is not a member, proceed to add them
+      console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
       const response = await addUserToGroup(
         userPrincipalName,
         groupId,
@@ -90,27 +138,12 @@ export default {
           added: true,
           address: baseUrl
         };
-      } else if (response.status === 400) {
-        const errorText = await response.text();
-        // Handle both possible Azure "already a member" error message formats
-        if (errorText.includes('already a member') || errorText.includes("modified properties: 'members'")) {
-          console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
-          return {
-            status: 'success',
-            userPrincipalName,
-            groupId,
-            added: false,
-            message: 'User is already a member of the group',
-            address: baseUrl
-          };
-        }
-        throw new Error(`Bad request: ${errorText}`);
       } else {
         const errorText = await response.text();
         throw new Error(`Failed to add user to group: ${response.status} ${response.statusText} - ${errorText}`);
       }
     } catch (error) {
-      console.error(`Error adding user to group: ${error.message}`);
+      console.error(`Error in group membership operation: ${error.message}`);
       throw error;
     }
   },
