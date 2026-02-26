@@ -26,6 +26,10 @@ scenarios:
           url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/200-user-exists.http
       - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
+      - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
         fixture: fixtures/204-no-content.http
@@ -51,9 +55,9 @@ scenarios:
           url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/200-user-exists.http
       - request:
-          method: POST
-          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
-        fixture: fixtures/400-already-member.http
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-existing-membership.http
     invoke:
       returns:
         status: success
@@ -120,6 +124,10 @@ scenarios:
           method: GET
           url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/200-user-exists.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
       - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
