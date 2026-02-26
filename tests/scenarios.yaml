@@ -1,0 +1,136 @@
+# Azure AD Add User to Group Test Scenarios
+action:
+  params:
+    userPrincipalName: testuser@yourtenant.onmicrosoft.com
+    groupId: 12345678-1234-1234-1234-123456789012
+  context:
+    secrets:
+      OAUTH2_CLIENT_CREDENTIALS_CLIENT_SECRET: test-client-secret
+    environment:
+      ADDRESS: https://graph.microsoft.com
+      OAUTH2_CLIENT_CREDENTIALS_TOKEN_URL: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+      OAUTH2_CLIENT_CREDENTIALS_CLIENT_ID: test-client-id
+      OAUTH2_CLIENT_CREDENTIALS_SCOPE: https://graph.microsoft.com/.default
+
+scenarios:
+  - name: successfully add user to group
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
+      - request:
+          method: POST
+          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+        fixture: fixtures/204-no-content.http
+    invoke:
+      returns:
+        status: success
+        userPrincipalName: testuser@yourtenant.onmicrosoft.com
+        groupId: 12345678-1234-1234-1234-123456789012
+        added: true
+        message: User successfully added to group
+        address: https://graph.microsoft.com
+
+  - name: idempotent - second call succeeds when user already in group
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-existing-membership.http
+    invoke:
+      returns:
+        status: success
+        userPrincipalName: testuser@yourtenant.onmicrosoft.com
+        groupId: 12345678-1234-1234-1234-123456789012
+        added: false
+        message: User is already a member of the group
+        address: https://graph.microsoft.com
+
+  - name: user or group not found
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/404-user-not-found.http
+    invoke:
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
+
+  - name: unauthorized - invalid token
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/401-unauthorized.http
+    invoke:
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
+
+  - name: insufficient permissions
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/403-forbidden.http
+    invoke:
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
+
+  - name: server error on add
+    steps:
+      - request:
+          method: POST
+          url: https://login.microsoftonline.com/test-tenant/oauth2/v2.0/token
+          headers:
+            Content-Type: application/x-www-form-urlencoded
+        fixture: fixtures/200-oauth-token.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
+      - request:
+          method: GET
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?%24filter=id+eq+%2712345678-1234-1234-1234-123456789012%27
+        fixture: fixtures/200-empty-membership.http
+      - request:
+          method: POST
+          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+        fixture: fixtures/500-internal-server.http
+    invoke:
+      throws: "Failed to add user to group"
