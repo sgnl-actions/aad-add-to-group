@@ -1,0 +1,12 @@
+HTTP/2 200
+cache-control: no-cache
+content-type: application/json; odata.metadata=minimal; odata.streaming=true; IEEE754Compatible=false; charset=utf-8
+strict-transport-security: max-age=31536000
+request-id: 12345678-1234-1234-1234-123456789012
+client-request-id: 12345678-1234-1234-1234-123456789012
+x-ms-ags-diagnostic: {"ServerInfo":{"DataCenter":"West US 2","Slice":"E","Ring":"4","ScaleUnit":"004","RoleInstance":"MW2PEPF0000FF0D"}}
+x-ms-resource-unit: 1
+odata-version: 4.0
+date: Wed, 25 Feb 2026 21:55:39 GMT
+
+{"@odata.context":"https://graph.microsoft.com/v1.0/$metadata#users/$entity","id":"12345678-1234-5678-9012-123456789012","displayName":"Test User","userPrincipalName":"testuser@yourtenant.onmicrosoft.com","mail":"testuser@yourtenant.onmicrosoft.com"}

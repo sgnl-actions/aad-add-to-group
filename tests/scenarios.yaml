@@ -23,8 +23,8 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
-        fixture: fixtures/200-empty-membership.http
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
       - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
@@ -35,6 +35,7 @@ scenarios:
         userPrincipalName: testuser@yourtenant.onmicrosoft.com
         groupId: 12345678-1234-1234-1234-123456789012
         added: true
+        message: User successfully added to group
         address: https://graph.microsoft.com
 
   - name: idempotent - second call succeeds when user already in group
@@ -47,8 +48,12 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
-        fixture: fixtures/200-existing-membership.http
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
+      - request:
+          method: POST
+          url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
+        fixture: fixtures/400-already-member.http
     invoke:
       returns:
         status: success
@@ -68,10 +73,10 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/404-user-not-found.http
     invoke:
-      throws: "Failed to check group membership"
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
 
   - name: unauthorized - invalid token
     steps:
@@ -83,10 +88,10 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/401-unauthorized.http
     invoke:
-      throws: "Failed to check group membership"
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
 
   - name: insufficient permissions
     steps:
@@ -98,10 +103,10 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
         fixture: fixtures/403-forbidden.http
     invoke:
-      throws: "Failed to check group membership"
+      throws: "User testuser@yourtenant.onmicrosoft.com does not exist in Azure AD"
 
   - name: server error on add
     steps:
@@ -113,8 +118,8 @@ scenarios:
         fixture: fixtures/200-oauth-token.http
       - request:
           method: GET
-          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com/memberOf?$filter=id%20eq%20%2712345678-1234-1234-1234-123456789012%27
-        fixture: fixtures/200-empty-membership.http
+          url: https://graph.microsoft.com/v1.0/users/testuser%40yourtenant.onmicrosoft.com
+        fixture: fixtures/200-user-exists.http
       - request:
           method: POST
           url: https://graph.microsoft.com/v1.0/groups/12345678-1234-1234-1234-123456789012/members/$ref
