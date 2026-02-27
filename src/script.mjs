@@ -7,6 +7,66 @@
 import { getBaseURL, createHeaders } from '@sgnl-actions/utils';
 
 /**
+ * Helper function to check if user exists in Azure AD
+ * @param {string} userPrincipalName - User Principal Name (UPN) of the user
+ * @param {string} baseUrl - Azure AD base URL
+ * @param {Object} headers - Request headers with Authorization
+ * @returns {Promise<boolean>} - True if user exists, false otherwise
+ */
+async function userExists(userPrincipalName, baseUrl, headers) {
+  const encodedUPN = encodeURIComponent(userPrincipalName);
+  const url = `${baseUrl}/v1.0/users/${encodedUPN}`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers
+  });
+
+  return response.ok;
+}
+
+/**
+ * Helper function to check if user is already a member of the group
+ * @param {string} userPrincipalName - User Principal Name (UPN) of the user
+ * @param {string} groupId - Azure AD Group ID (GUID)
+ * @param {string} baseUrl - Azure AD base URL
+ * @param {Object} headers - Request headers with Authorization
+ * @returns {Promise<boolean|null>} - True if user is already a member, false if not, null if unable to check
+ */
+async function isUserInGroup(userPrincipalName, groupId, baseUrl, headers) {
+  const encodedUPN = encodeURIComponent(userPrincipalName);
+
+  // Construct URL with proper encoding of the $filter parameter
+  const baseURL = `${baseUrl}/v1.0/users/${encodedUPN}/memberOf`;
+  const url = new URL(baseURL);
+  url.searchParams.set('$filter', `id eq '${groupId}'`);
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers
+    });
+
+    if (!response.ok) {
+      // If we get 403 Forbidden or 404 Not Found, we might not have permission to check membership
+      // Return null to indicate we can't determine membership status
+      if (response.status === 403 || response.status === 404) {
+        console.log(`Unable to check group membership (${response.status}), will attempt to add user directly`);
+        return null;
+      }
+      throw new Error(`Failed to check group membership: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.value && data.value.length > 0;
+  } catch (error) {
+    // If there's any error checking membership, log it but don't fail the operation
+    console.log(`Cannot check group membership: ${error.message}, will attempt to add user directly`);
+    return null;
+  }
+}
+
+/**
  * Helper function to add a user to a group in Azure AD
  * @param {string} userPrincipalName - User Principal Name (UPN) of the user
  * @param {string} groupId - Azure AD Group ID (GUID)
@@ -15,16 +75,10 @@ import { getBaseURL, createHeaders } from '@sgnl-actions/utils';
  * @returns {Promise<Response>} - Fetch response object
  */
 async function addUserToGroup(userPrincipalName, groupId, baseUrl, headers) {
-  // URL encode the user principal name for the OData reference
   const encodedUPN = encodeURIComponent(userPrincipalName);
-
-  // URL encode the group ID to handle any special characters
   const encodedGroupId = encodeURIComponent(groupId);
-
-  // Construct the Graph API endpoint
   const url = `${baseUrl}/v1.0/groups/${encodedGroupId}/members/$ref`;
 
-  // Prepare the request body with OData reference to the user
   const requestBody = {
     '@odata.id': `https://graph.microsoft.com/v1.0/users/${encodedUPN}`
   };
@@ -65,13 +119,62 @@ export default {
 
     const { userPrincipalName, groupId } = params;
 
+    // Validate required inputs before making any API calls
+    if (!userPrincipalName || typeof userPrincipalName !== 'string' || !userPrincipalName.trim()) {
+      throw new Error('userPrincipalName parameter is required and cannot be empty');
+    }
+    if (!groupId || typeof groupId !== 'string' || !groupId.trim()) {
+      throw new Error('groupId parameter is required and cannot be empty');
+    }
+
     // Get base URL and authentication headers using utilities
     const baseUrl = getBaseURL(params, context);
     const headers = await createHeaders(context);
 
-    console.log(`Adding user ${userPrincipalName} to group ${groupId}`);
+    console.log(`Checking if user ${userPrincipalName} exists in Azure AD`);
 
     try {
+      // First, check if user exists in Azure AD
+      const doesUserExist = await userExists(
+        userPrincipalName,
+        baseUrl,
+        headers
+      );
+
+      if (!doesUserExist) {
+        throw new Error(`User ${userPrincipalName} does not exist in Azure AD`);
+      }
+
+      console.log(`User ${userPrincipalName} exists. Checking if already in group ${groupId}`);
+
+      // Check if user is already a member of the group
+      const membershipStatus = await isUserInGroup(
+        userPrincipalName,
+        groupId,
+        baseUrl,
+        headers
+      );
+
+      if (membershipStatus === true) {
+        console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
+        return {
+          status: 'success',
+          userPrincipalName,
+          groupId,
+          added: false,
+          message: 'User is already a member of the group',
+          address: baseUrl
+        };
+      }
+
+      // If membershipStatus is false (not in group) or null (can't check), proceed to add
+      const actionMessage = membershipStatus === false
+        ? `User ${userPrincipalName} is not in group. Adding to group ${groupId}`
+        : `Cannot verify membership status. Attempting to add user ${userPrincipalName} to group ${groupId}`;
+
+      console.log(actionMessage);
+
+      // User is not a member or we can't verify, proceed to add them
       const response = await addUserToGroup(
         userPrincipalName,
         groupId,
@@ -79,21 +182,21 @@ export default {
         headers
       );
 
-      // Handle different response scenarios
       if (response.status === 204) {
-        // Success - user added to group
         console.log(`Successfully added user ${userPrincipalName} to group ${groupId}`);
         return {
           status: 'success',
           userPrincipalName,
           groupId,
           added: true,
+          message: 'User successfully added to group',
           address: baseUrl
         };
       } else if (response.status === 400) {
-        // Bad request - could be user already in group or invalid IDs
-        const errorText = await response.text();
-        if (errorText.includes('already a member')) {
+        // Check if this is an "already exists" error
+        const errorData = await response.json().catch(() => null);
+        if (errorData && errorData.error && errorData.error.code === 'Request_BadRequest' &&
+            errorData.error.message && errorData.error.message.includes('already exist')) {
           console.log(`User ${userPrincipalName} is already a member of group ${groupId}`);
           return {
             status: 'success',
@@ -104,45 +207,29 @@ export default {
             address: baseUrl
           };
         }
-        throw new Error(`Bad request: ${errorText}`);
+        // If it's a different 400 error, throw it
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Failed to add user to group: ${response.status} ${response.statusText} - ${errorText}`);
       } else {
-        // Other error responses
-        const errorText = await response.text();
+        const errorText = await response.text().catch(() => 'Unknown error');
         throw new Error(`Failed to add user to group: ${response.status} ${response.statusText} - ${errorText}`);
       }
     } catch (error) {
-      console.error(`Error adding user to group: ${error.message}`);
+      console.error(`Error in group membership operation: ${error.message}`);
       throw error;
     }
   },
 
-  /**
-   * Error recovery handler - framework handles retries by default
-   * Only implement if custom recovery logic is needed
-   * @param {Object} params - Original params plus error information
-   * @param {Object} context - Execution context
-   * @returns {Object} Recovery results
-   */
   error: async (params, _context) => {
     const { error, userPrincipalName, groupId } = params;
     console.error(`User group assignment failed for user ${userPrincipalName} to group ${groupId}: ${error.message}`);
-
-    // Framework handles retries for transient errors (429, 502, 503, 504)
-    // Just re-throw the error to let the framework handle it
     throw error;
   },
 
-  /**
-   * Graceful shutdown handler - performs cleanup
-   * @param {Object} params - Original params plus halt reason
-   * @param {Object} context - Execution context
-   * @returns {Object} Cleanup results
-   */
   halt: async (params, _context) => {
     const { reason, userPrincipalName, groupId } = params;
     console.log(`Azure AD add user to group operation halted: ${reason}`);
 
-    // No specific cleanup needed for this operation
     return {
       status: 'halted',
       userPrincipalName: userPrincipalName || 'unknown',

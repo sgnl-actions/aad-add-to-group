@@ -1,0 +1,17 @@
+HTTP/1.1 500 Internal Server Error
+Content-Type: application/json; charset=utf-8
+cache-control: no-cache
+Strict-Transport-Security: max-age=31536000
+Date: Mon, 25 Feb 2026 10:30:00 GMT
+Content-Length: 100
+
+{
+  "error": {
+    "code": "InternalServerError",
+    "message": "An internal server error occurred.",
+    "innerError": {
+      "date": "2026-02-25T10:30:00",
+      "request-id": "12345678-1234-1234-1234-123456789012"
+    }
+  }
+}

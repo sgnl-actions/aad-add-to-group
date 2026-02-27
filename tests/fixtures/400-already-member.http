@@ -1,0 +1,11 @@
+HTTP/2 400
+cache-control: no-cache
+content-type: application/json
+strict-transport-security: max-age=31536000
+request-id: 471eba67-664e-49b9-b4c1-3d482e108b00
+client-request-id: 471eba67-664e-49b9-b4c1-3d482e108b00
+x-ms-ags-diagnostic: {"ServerInfo":{"DataCenter":"West US 2","Slice":"E","Ring":"4","ScaleUnit":"001","RoleInstance":"MW2PEPF00012CC9"}}
+x-ms-resource-unit: 1
+date: Wed, 25 Feb 2026 22:33:47 GMT
+
+{"error":{"code":"Request_BadRequest","message":"One or more added object references already exist for the following modified properties: 'members'.","innerError":{"date":"2026-02-25T22:33:48","request-id":"471eba67-664e-49b9-b4c1-3d482e108b00","client-request-id":"471eba67-664e-49b9-b4c1-3d482e108b00"}}}
