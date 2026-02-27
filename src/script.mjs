@@ -4,7 +4,7 @@
  * Adds a user to a group in Azure Active Directory using Microsoft Graph API.
  */
 
-import { getBaseURL, createAuthHeaders } from '@sgnl-actions/utils';
+import { getBaseURL, createHeaders } from '@sgnl-actions/utils';
 
 /**
  * Helper function to check if user exists in Azure AD
@@ -129,7 +129,7 @@ export default {
 
     // Get base URL and authentication headers using utilities
     const baseUrl = getBaseURL(params, context);
-    const headers = await createAuthHeaders(context);
+    const headers = await createHeaders(context);
 
     console.log(`Checking if user ${userPrincipalName} exists in Azure AD`);
 
